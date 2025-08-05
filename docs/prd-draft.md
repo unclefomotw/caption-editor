@@ -22,8 +22,24 @@ Defintion: A caption is a timed text representation of spoken words and relevant
 
 ### Nice-to-have features, keep the flexibility
 
+* As a user, I can give a Google Drive URL to the video (which can either be public or private and shared to a Google service account), so that the app can download the video from the cloud and I have another option to import a video.
 * Given a video and a transcription without timestamps, a module in the app can do the alignment to cut the transcript text into segments and give them starting and ending timestamp.
 * Given a video and a caption, a module in the app can translate from the caption language to another language considering the segmentations and timestamps.
+
+### Some detail specs
+
+Caption Editor:
+* Users can add a new caption segment.
+* Users can delete an existing segment, no matter it's imported from an existing caption file or editted earlier by the user
+* Users can split a long segment into two.
+
+Work persistence:
+* Consider work persistence in MVP: if the user accidentally closes the web app, the app should have the ability to recover the editing captions before the close.  Implementing using browser localStorage works.
+
+Video file constraints:
+* Must support: .mp4
+* Support at best effort: .mov, .m4v
+* Nice-to-have: .avi , HLS streaming m3u8
 
 ## Proposed architecture draft
 
