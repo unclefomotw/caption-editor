@@ -10,7 +10,7 @@ The development will be phased to prioritize core functionality first.
 1.  **Setup Monorepo:** Initialize a monorepo to manage the frontend and backend projects.
 2.  **Frontend Scaffolding:** Create a new Next.js application for the web UI.
 3.  **Develop Video Player Component:** Implement a React component that can load and play local video files (supporting `.mp4`, `.mov`, and `.m4v`), with controls for play, pause, and seeking.
-4.  **Develop Caption Editor Component:** Create the UI for displaying and editing caption segments. This must include the ability to **add**, **delete**, and **split** segments, in addition to editing text and timestamps.
+4.  **Develop Caption Editor Component:** Create the UI for displaying and editing caption segments. This must include the ability to **add**, **delete**, **merge** and **split** segments, in addition to editing text and timestamps.
 5.  **Implement Work Persistence:** Use browser `localStorage` to automatically save the user's current work, allowing them to recover from accidental tab closures.
 6.  **Client-Side Import/Export:** Implement functionality to import a video file and import/export a standard caption file (e.g., VTT or SRT) directly in the browser. At this stage, no backend is involved.
 
