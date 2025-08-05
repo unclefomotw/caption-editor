@@ -1,0 +1,17 @@
+# prd-draft.md -> plan.md
+
+I want to build a web app for users to edit captions easily for their videos.
+
+I put my initial ideas, project goal, features, requirements, and possible architecture in @docs/prd-draft.md .
+
+YOUR JOB: generate the following materials so that we can develop according to them in the future:
+* An action plan
+* A list of libraries to use
+* Initial project directory structure
+
+Do not jump into conclusion.  Do not implement any codes yet.
+
+Ask me questions for you to gain more information about the project.
+Use web search as part of your considering when choosing libraries.
+
+Think carefully.  Write and update your plan to `docs/plan.md` every time you respond.  We plan this together iteratively.
