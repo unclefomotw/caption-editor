@@ -59,12 +59,12 @@ A monorepo structure will be used to separate the frontend and backend concerns.
 *   **Deployment:**
     *   **Docker / Docker Compose**
 *   **Monorepo Management:**
-    *   **Turborepo** or **Nx:** To manage dependencies and build processes for the JavaScript/TypeScript workspace.
+    *   **Turborepo:** To manage dependencies and build processes across the entire monorepo, including both JavaScript/TypeScript and Python packages.
 *   **Frontend (web-ui):**
     *   **Framework:** Next.js (with TypeScript)
-    *   **UI Components:** Shadcn/ui or Material-UI (MUI) for a modern, clean look.
+    *   **UI Components:** **Shadcn/ui** for a modern, clean look, providing full control over component code.
     *   **Video Playback:** `react-player`
-    *   **State Management:** Zustand or Redux Toolkit
+    *   **State Management:** **Zustand** for a lightweight, simple, and performant state management solution, which is well-suited for the high-frequency updates required by the editor's UX.
 *   **Backend (api-server):**
     *   **Framework:** FastAPI
     *   **AI - Caption Generation:** **AssemblyAI API** (for the MVP).
@@ -209,3 +209,12 @@ For backend modules that are selected at deployment time, such as the AI transcr
 
 ### Session-Level Choices (e.g., Import Sources)
 For features that represent a user's choice within a session, such as importing a video from a local file versus a Google Drive URL, this is not a configuration issue. These are distinct user workflows that will be presented as choices in the UI. The frontend will have separate components for each import method, and the backend will have distinct API endpoints to handle the different sources.
+
+## 8. System Constraints
+
+To ensure stability and a consistent user experience, the following constraints will be applied for the initial version of the application.
+
+*   **Video File Formats:**
+    *   **Must Support:** `.mp4`
+    *   **Best Effort:** `.mov`, `.m4v`
+    *   **Out of Scope for MVP:** `.avi`, HLS/DASH streaming (`.m3u8`)
