@@ -1,10 +1,8 @@
 /* Generated index file - exports all types */
 
-export * from './api-contracts';
-export * from './caption-file';
-export * from './caption-segment';
-
-// Re-export main types with cleaner names
-export type { ApiContracts } from './apicontracts';
-export type { CaptionFile } from './captionfile';
-export type { CaptionSegment } from './captionsegment';
+// Import and re-export types explicitly
+export type { CaptionFile } from './caption-file';
+export type { CaptionSegment } from './caption-segment';
+export type { HealthResponse } from './health-response';
+export type { TranscriptionRequest } from './transcription-request';
+export type { TranscriptionResponse } from './transcription-response';

@@ -13,7 +13,7 @@ interface VideoPlayerProps {
 }
 
 export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
-  const playerRef = useRef<ReactPlayer>(null);
+  const playerRef = useRef<ReactPlayer | null>(null);
   
   const {
     video,
@@ -42,17 +42,6 @@ export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
     onVideoLoad?.(url);
   }, [setVideoUrl, onVideoLoad]);
 
-  // Handle when video is ready to play
-  const handleReady = useCallback(() => {
-    setVideoReady(true);
-    // Get duration from the player ref
-    if (playerRef.current) {
-      const duration = playerRef.current.getDuration();
-      if (duration) {
-        setVideoDuration(duration);
-      }
-    }
-  }, [setVideoReady, setVideoDuration]);
 
   // Handle progress updates
   const handleProgress = useCallback((progress: { playedSeconds: number, loadedSeconds: number, played: number, loaded: number }) => {
@@ -62,16 +51,28 @@ export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
     // Set duration if we haven't got it yet and player is ready
     if (!video.isReady && playerRef.current) {
       const duration = playerRef.current.getDuration();
-      if (duration > 0) {
+      if (duration && duration > 0) {
         setVideoDuration(duration);
         setVideoReady(true);
       }
     }
   }, [setCurrentTime, selectSegmentByTime, video.isReady, setVideoDuration, setVideoReady]);
 
+  // Handle when video can start playing (has loaded metadata)
+  const handleCanPlay = useCallback(() => {
+    if (playerRef.current) {
+      const duration = playerRef.current.getDuration();
+      if (duration && duration > 0) {
+        setVideoDuration(duration);
+        setVideoReady(true);
+      }
+    }
+  }, [setVideoDuration, setVideoReady]);
+
   // Handle play/pause
   const togglePlayPause = useCallback(() => {
-    setIsPlaying(!video.isPlaying);
+    const newPlayingState = !video.isPlaying;
+    setIsPlaying(newPlayingState);
   }, [video.isPlaying, setIsPlaying]);
 
   // Handle seek
@@ -166,6 +167,7 @@ export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
             onProgress={handleProgress}
             onPlay={() => setIsPlaying(true)}
             onPause={() => setIsPlaying(false)}
+            onLoadedMetadata={handleCanPlay}
             progressInterval={100}
             config={{
               file: {

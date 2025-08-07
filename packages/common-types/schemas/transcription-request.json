@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://caption-editor.com/schemas/transcription-request.json",
+  "title": "Transcription Request",
+  "description": "Request model for AI transcription",
+  "type": "object",
+  "properties": {
+    "videoUrl": {
+      "type": "string",
+      "format": "uri",
+      "description": "URL to the video file for transcription"
+    },
+    "videoFile": {
+      "type": "string",
+      "description": "Base64 encoded video file content"
+    },
+    "language": {
+      "type": "string",
+      "pattern": "^[a-z]{2}(-[A-Z]{2})?$",
+      "default": "en",
+      "description": "Target language for transcription"
+    },
+    "options": {
+      "type": "object",
+      "properties": {
+        "speakerDiarization": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable speaker identification"
+        },
+        "punctuation": {
+          "type": "boolean", 
+          "default": true,
+          "description": "Include punctuation in transcription"
+        },
+        "profanityFilter": {
+          "type": "boolean",
+          "default": false,
+          "description": "Filter profanity from transcription"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "oneOf": [
+    {"required": ["videoUrl"]},
+    {"required": ["videoFile"]}
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://caption-editor.com/schemas/transcription-response.json",
+  "title": "Transcription Response",
+  "description": "Response model for AI transcription",
+  "type": "object",
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": ["queued", "processing", "completed", "failed"],
+      "description": "Current status of the transcription job"
+    },
+    "jobId": {
+      "type": "string",
+      "description": "Unique identifier for the transcription job"
+    },
+    "captions": {
+      "$ref": "caption-file.json",
+      "description": "Transcribed captions (only when status is completed)"
+    },
+    "message": {
+      "type": "string",
+      "description": "Human-readable status message"
+    },
+    "error": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "description": "Error code"
+        },
+        "message": {
+          "type": "string", 
+          "description": "Error message"
+        },
+        "details": {
+          "type": "object",
+          "description": "Additional error details"
+        }
+      },
+      "required": ["code", "message"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["status", "message"],
+  "additionalProperties": false
+}

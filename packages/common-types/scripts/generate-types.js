@@ -52,18 +52,15 @@ async function generateTypes() {
       console.log(`  ✅ Generated ${outputName}`);
     }
 
-    // Generate index.ts that exports all types
+    // Generate index.ts that exports all types with explicit exports to avoid conflicts
     const indexContent = [
       '/* Generated index file - exports all types */',
       '',
-      ...generatedTypes.map(({ file, typeName }) => 
-        `export * from './${file.replace('.ts', '')}';`
-      ),
-      '',
-      '// Re-export main types with cleaner names',
-      ...generatedTypes.map(({ typeName }) => 
-        `export type { ${typeName} } from './${typeName.toLowerCase().replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase()}';`
-      ),
+      '// Import and re-export types explicitly',
+      ...generatedTypes.map(({ file }) => {
+        const typeName = pascalCase(file.replace('.ts', ''));
+        return `export type { ${typeName} } from './${file.replace('.ts', '')}';`;
+      }),
       ''
     ].join('\n');
     

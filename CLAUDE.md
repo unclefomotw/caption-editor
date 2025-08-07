@@ -34,17 +34,39 @@ Building a web application for editing video captions with AI-powered transcript
 1. **Monorepo structure** with proper workspace configuration
 2. **Next.js frontend** with Shadcn/ui setup - fully functional
 3. **FastAPI backend** with complete router structure and dependencies
-4. **Turborepo** build orchestration with proper pipeline
-5. **JSON schemas** and TypeScript type generation system
+4. **JSON schemas** and TypeScript type generation system
+5. **Turborepo** build orchestration with proper pipeline
 6. **Type generation** scripts with automated build integration
 
-### ❌ Not Started
-- Frontend components (VideoPlayer, CaptionEditor)
-- Zustand state management
-- Video file handling and playback
+### 🔄 In Progress (3/20 tasks)
+- **VideoPlayer component** - UI complete but video playback broken (CRITICAL ISSUE)
+- **CaptionEditor component** - UI built but not fully functional
+- **Zustand state management** - Store created but not properly integrated
+
+### 🚨 CRITICAL ISSUE - Video Playback Broken
+**Current Problem**: The web application loads successfully, but videos cannot be played.
+
+**Symptoms**:
+- ✅ File upload works - can select video files
+- ✅ VideoPlayer UI renders correctly  
+- ❌ Video duration shows "0:00 / 0:00" instead of actual length
+- ❌ Play button has no effect - video doesn't start
+- ❌ Progress bar stays at 0
+- ❌ Video metadata not being detected by ReactPlayer
+
+**Files to investigate**:
+- `packages/web-ui/src/components/VideoPlayer.tsx` (ReactPlayer configuration)
+- Browser console for JavaScript errors
+- Video file format compatibility with ReactPlayer
+
+### ❌ Not Started (11/20 tasks)
+- Bidirectional video/caption synchronization
+- localStorage persistence for work recovery  
+- Caption file import/export (VTT/SRT parsing)
 - AI transcription integration (AssemblyAI)
 - Docker configurations
-- Caption file import/export (VTT/SRT parsing)
+- API endpoint connections
+- End-to-end workflow testing
 
 ## How to Run/Test
 
@@ -170,8 +192,50 @@ The backend is complete with working endpoints:
 - `GET /api/captions/transcribe/{job_id}` - Check transcription status
 
 ## Next Priority Tasks (In Order)
-1. **Add react-player** to web-ui and implement VideoPlayer component
-2. **Add zustand** for state management of caption segments
-3. **Implement CaptionEditor** component with segment editing UI
-4. **Connect frontend to backend** API endpoints
-5. **Implement real AssemblyAI** integration (currently mock responses)
+
+### IMMEDIATE PRIORITY 
+1. 🚨 **Fix ReactPlayer video playback issue** - Videos upload but won't play
+   - Debug `onLoadedMetadata` callback in VideoPlayer.tsx
+   - Check browser console for ReactPlayer errors
+   - Test with different video formats/codecs
+   - Consider alternative: HTML5 video element vs ReactPlayer
+
+### AFTER VIDEO PLAYBACK WORKS
+2. **Complete VideoPlayer integration** - Proper duration detection and controls
+3. **Finish CaptionEditor functionality** - Connect to Zustand store properly
+4. **Implement bidirectional sync** - Video seek updates caption selection
+5. **Add localStorage persistence** - Auto-save user work
+6. **Connect to FastAPI backend** - Real API integration
+7. **Implement AssemblyAI transcription** - Replace mock responses
+
+**Note for successors**: The foundation is solid but the core video playback feature must work before proceeding with other features.
+
+## Troubleshooting Video Playback Issue
+
+### What Works ✅
+- Application loads and renders correctly
+- Video file selection and upload
+- VideoPlayer UI displays with controls
+- Zustand state management setup
+- Build system and type generation
+
+### What's Broken ❌
+- ReactPlayer doesn't detect video metadata
+- Duration remains "0:00 / 0:00" 
+- Play button doesn't trigger video playback
+- `onLoadedMetadata` callback not firing
+
+### Debug Steps for Successor
+1. **Check browser console** (F12) during video upload for errors
+2. **Test ReactPlayer props** - Try minimal ReactPlayer configuration
+3. **Verify video formats** - Test with standard .mp4 files
+4. **Check video codecs** - Some codecs may not be browser-supported
+5. **Test alternative approach** - Replace ReactPlayer with HTML5 `<video>` element
+6. **Check CORS/security** - Local file access restrictions
+
+### Possible Causes
+- ReactPlayer version compatibility with Next.js 15.4.6
+- Video file format/codec not supported by browser
+- Missing ReactPlayer dependencies for specific formats
+- Incorrect prop usage (`onLoadedMetadata` may not exist)
+- Local file URL creation issue with `URL.createObjectURL()`
