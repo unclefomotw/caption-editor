@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://caption-editor.com/schemas/caption-segment.json",
+  "title": "Caption Segment",
+  "description": "A single caption segment with timing and text",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique identifier for the caption segment"
+    },
+    "startTime": {
+      "type": "number",
+      "description": "Start time of the caption in seconds",
+      "minimum": 0
+    },
+    "endTime": {
+      "type": "number", 
+      "description": "End time of the caption in seconds",
+      "minimum": 0
+    },
+    "text": {
+      "type": "string",
+      "description": "Caption text content",
+      "minLength": 1
+    },
+    "confidence": {
+      "type": "number",
+      "description": "AI transcription confidence score (0-1)",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "speaker": {
+      "type": "string",
+      "description": "Speaker identifier (optional)"
+    }
+  },
+  "required": ["id", "startTime", "endTime", "text"],
+  "additionalProperties": false
+}

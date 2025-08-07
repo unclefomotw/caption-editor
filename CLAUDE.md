@@ -11,11 +11,17 @@ Building a web application for editing video captions with AI-powered transcript
 - **Shadcn/ui** components library
 - **App Router** with src directory structure
 
-### Backend (packages/api-server) - IN PROGRESS
+### Backend (packages/api-server) 
 - **FastAPI** with Python 3.11+
 - **Poetry** for dependency management. Use Poetry 2.1
 - **Pydantic** for data validation
-- **AssemblyAI** for AI transcription (planned)
+- **Uvicorn** ASGI server for development
+- **AssemblyAI** for AI transcription (dependency added, not implemented)
+
+### Shared Types (packages/common-types)
+- **JSON Schema** for data structure definitions
+- **TypeScript generation** from JSON schemas
+- **Workspace linking** for type sharing across packages
 
 ### Monorepo Setup
 - **Turborepo** for build orchestration
@@ -24,20 +30,21 @@ Building a web application for editing video captions with AI-powered transcript
 
 ## Current Status
 
-### ✅ Completed
-1. Monorepo structure with proper workspace configuration
-2. Next.js frontend with Shadcn/ui setup
-3. Basic FastAPI project structure with pyproject.toml
-4. Root workspace dependencies installed
-
-### ⚠️ In Progress
-- FastAPI backend (missing router files to be runnable)
+### ✅ Completed (6/20 tasks - 30%)
+1. **Monorepo structure** with proper workspace configuration
+2. **Next.js frontend** with Shadcn/ui setup - fully functional
+3. **FastAPI backend** with complete router structure and dependencies
+4. **Turborepo** build orchestration with proper pipeline
+5. **JSON schemas** and TypeScript type generation system
+6. **Type generation** scripts with automated build integration
 
 ### ❌ Not Started
-- JSON schemas in common-types package
-- Docker configurations
-- AI transcription integration
 - Frontend components (VideoPlayer, CaptionEditor)
+- Zustand state management
+- Video file handling and playback
+- AI transcription integration (AssemblyAI)
+- Docker configurations
+- Caption file import/export (VTT/SRT parsing)
 
 ## How to Run/Test
 
@@ -54,16 +61,30 @@ Starts Next.js frontend on http://localhost:3000
 cd packages/web-ui
 npm run dev
 
-# Backend (when complete)
+# Backend server
 cd packages/api-server
-poetry install
-poetry run uvicorn caption_editor_api.main:app --reload
+source .venv/bin/activate  # or: poetry shell
+uvicorn caption_editor_api.main:app --reload
+# Backend runs on http://localhost:8000
+# API docs available at http://localhost:8000/docs
 ```
 
 ### Build Commands
 ```bash
-npm run build  # Build all packages
-npm run lint   # Lint all packages
+npm run build        # Build all packages (includes type generation)
+npm run lint         # Lint all packages  
+npm run generate-types  # Generate TypeScript types from JSON schemas
+```
+
+### Type Generation System
+```bash
+# Regenerate types after schema changes
+cd packages/common-types
+npm run generate-types
+
+# Or build everything (includes type generation)
+cd ../..
+npm run build
 ```
 
 ## Project Structure
@@ -71,7 +92,7 @@ npm run lint   # Lint all packages
 ```
 caption-editor/
 ├── package.json          # Workspace root
-├── turbo.json           # Turborepo config
+├── turbo.json           # Turborepo config  
 ├── pyproject.toml       # Python workspace root
 ├── CLAUDE.md           # This file
 └── packages/
@@ -79,51 +100,78 @@ caption-editor/
     │   ├── src/app/
     │   ├── components.json
     │   └── package.json
-    ├── api-server/     # FastAPI backend (IN PROGRESS)
+    ├── api-server/     # FastAPI backend (COMPLETE) 
     │   ├── src/caption_editor_api/
-    │   └── pyproject.toml
-    └── common-types/   # Shared schemas (EMPTY)
+    │   │   ├── main.py           # FastAPI app
+    │   │   └── routers/          # API endpoints
+    │   │       ├── health.py     # Health check
+    │   │       └── captions.py   # Caption processing
+    │   ├── pyproject.toml        # Poetry config
+    │   ├── poetry.lock          # Locked dependencies
+    │   └── .venv/               # Virtual environment
+    └── common-types/   # Shared schemas (COMPLETE)
+        ├── schemas/            # JSON schema definitions
+        │   ├── caption-segment.json
+        │   ├── caption-file.json  
+        │   └── api-contracts.json
+        ├── src/types/         # Generated TypeScript
+        │   ├── caption-segment.ts
+        │   ├── caption-file.ts
+        │   ├── api-contracts.ts
+        │   └── index.ts       # Exports all types
+        ├── scripts/           # Type generation
+        │   └── generate-types.js
+        └── package.json
 ```
 
 ## Rules for Successors
 
 ### Development Workflow
 1. **Always run commands from project root** when using Turborepo
-2. **Use workspace commands**: `npm run dev` instead of individual package commands
+2. **Use workspace commands**: `npm run dev` instead of individual package commands  
 3. **Test both frontend and backend** after making changes
+4. **Generate types after schema changes**: Run `npm run build` to regenerate TypeScript types
 
 ### Code Standards
 1. **Follow existing file structure** - don't create new top-level directories
-2. **Use TypeScript** for all frontend code
-3. **Use Poetry** for Python dependency management
+2. **Use TypeScript** for all frontend code with strict typing
+3. **Use Poetry 2.1** for Python dependency management (not pip/venv)
 4. **Keep monorepo workspace clean** - dependencies belong in individual packages
+5. **Import types from common-types**: Always use shared types for consistency
 
-### FastAPI Backend Continuation
-The backend needs these files to be runnable:
-```
-src/caption_editor_api/routers/
-├── __init__.py
-├── health.py      # Health check endpoint
-└── captions.py    # Caption processing endpoints
-```
+### Type System Rules
+1. **Modify schemas, not generated types** - Edit `.json` files, not `.ts` files
+2. **Run type generation after schema changes** - `npm run build` or `npm run generate-types`
+3. **Use shared types everywhere** - Import from `@caption-editor/common-types`
+4. **Don't create duplicate type definitions** - Use the shared schemas
 
-### Key Dependencies to Remember
-- **Frontend**: react-player (for video playback), zustand (state management)
-- **Backend**: assemblyai (AI transcription), python-multipart (file uploads)
-- **Shared**: JSON schemas for type safety between frontend/backend
+### FastAPI Backend Structure
+The backend is complete with working endpoints:
+- **Health**: `GET /api/health` 
+- **Upload**: `POST /api/captions/upload` (VTT/SRT files)
+- **Transcribe**: `POST /api/captions/transcribe` (AI transcription)
+- **Status**: `GET /api/captions/transcribe/{job_id}` (Check transcription)
+
+### Key Dependencies Already Added
+- **Frontend**: Next.js 15.4.6, Tailwind, Shadcn/ui, TypeScript
+- **Backend**: FastAPI, Uvicorn, Pydantic, AssemblyAI, HTTPX
+- **Types**: json-schema-to-typescript for automated generation
 
 ### Testing Strategy
 1. **Frontend**: Test component rendering and user interactions
-2. **Backend**: Test API endpoints with pytest
-3. **Integration**: Test full video → AI → caption editing workflow
+2. **Backend**: Test API endpoints manually via http://localhost:8000/docs
+3. **Types**: Verify TypeScript compilation after schema changes
+4. **Integration**: Test full video → AI → caption editing workflow
 
-## Known Issues
-- Backend router files incomplete (main.py references missing files)
-- No shared type definitions between frontend/backend yet
-- Docker configurations not implemented
+## Current API Endpoints (Working)
+- `GET /api/health` - System health check
+- `POST /api/captions/upload` - Upload VTT/SRT caption files  
+- `POST /api/captions/transcribe` - Start AI video transcription
+- `GET /api/captions/transcribe/{job_id}` - Check transcription status
 
-## Next Priority Tasks
-1. Complete FastAPI router files to make backend runnable
-2. Implement JSON schemas in common-types package
-3. Add VideoPlayer component with react-player
-4. Implement caption editing UI components
+## Next Priority Tasks (In Order)
+1. **Add react-player** to web-ui and implement VideoPlayer component
+2. **Add zustand** for state management of caption segments
+3. **Implement CaptionEditor** component with segment editing UI
+4. **Connect frontend to backend** API endpoints
+5. **Implement real AssemblyAI** integration (currently mock responses)

@@ -1,0 +1,16 @@
+{
+  "name": "@caption-editor/common-types",
+  "version": "0.1.0",
+  "description": "Shared JSON schemas and TypeScript types for Caption Editor",
+  "main": "index.js",
+  "scripts": {
+    "generate-types": "node scripts/generate-types.js",
+    "build": "npm run generate-types"
+  },
+  "dependencies": {
+    "json-schema-to-typescript": "^13.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

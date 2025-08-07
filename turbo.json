@@ -4,7 +4,10 @@
   "pipeline": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
+      "outputs": [".next/**", "!.next/cache/**", "dist/**", "src/types/**"]
+    },
+    "generate-types": {
+      "outputs": ["src/types/**"]
     },
     "lint": {},
     "dev": {

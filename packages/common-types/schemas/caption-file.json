@@ -1,0 +1,56 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://caption-editor.com/schemas/caption-file.json",
+  "title": "Caption File",
+  "description": "A complete caption file containing multiple segments",
+  "type": "object",
+  "properties": {
+    "segments": {
+      "type": "array",
+      "description": "Array of caption segments",
+      "items": {
+        "$ref": "caption-segment.json"
+      }
+    },
+    "language": {
+      "type": "string",
+      "description": "Language code (ISO 639-1)",
+      "pattern": "^[a-z]{2}(-[A-Z]{2})?$",
+      "default": "en"
+    },
+    "format": {
+      "type": "string",
+      "description": "Caption file format",
+      "enum": ["vtt", "srt", "ass", "sbv"],
+      "default": "vtt"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Optional metadata about the caption file",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Title of the video/content"
+        },
+        "duration": {
+          "type": "number",
+          "description": "Total duration in seconds",
+          "minimum": 0
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp"
+        },
+        "modifiedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last modification timestamp"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": ["segments"],
+  "additionalProperties": false
+}

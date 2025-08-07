@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@caption-editor/common-types": "file:../common-types",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.537.0",
