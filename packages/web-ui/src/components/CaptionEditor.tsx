@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useCaptionStore } from '@/stores/caption-store';
 import type { CaptionSegment } from '../../../common-types/src/types';
 import { Button } from '@/components/ui/button';
@@ -34,6 +34,9 @@ export function CaptionEditor({ className }: CaptionEditorProps) {
     setCurrentTime,
   } = useCaptionStore();
 
+  const segmentListRef = useRef<HTMLDivElement>(null);
+  const selectedSegmentRef = useRef<HTMLDivElement>(null);
+
   const [editingSegmentId, setEditingSegmentId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState('');
 
@@ -49,8 +52,38 @@ export function CaptionEditor({ className }: CaptionEditorProps) {
   const handleSegmentClick = useCallback((segment: CaptionSegment) => {
     selectSegment(segment.id);
     setCurrentTime(segment.startTime);
+    
+    // Also seek the video element directly
+    const videoElement = document.querySelector('video');
+    if (videoElement) {
+      videoElement.currentTime = segment.startTime;
+    }
+    
     setIsPlaying(true);
   }, [selectSegment, setCurrentTime, setIsPlaying]);
+  
+  // Auto-scroll to selected segment
+  useEffect(() => {
+    if (selectedSegmentId && selectedSegmentRef.current && segmentListRef.current) {
+      const segmentElement = selectedSegmentRef.current;
+      const listElement = segmentListRef.current;
+      
+      const segmentTop = segmentElement.offsetTop;
+      const segmentHeight = segmentElement.offsetHeight;
+      const listScrollTop = listElement.scrollTop;
+      const listHeight = listElement.clientHeight;
+      
+      // Check if segment is outside the visible area
+      if (segmentTop < listScrollTop || segmentTop + segmentHeight > listScrollTop + listHeight) {
+        // Scroll to center the segment in the visible area
+        const targetScrollTop = segmentTop - listHeight / 2 + segmentHeight / 2;
+        listElement.scrollTo({
+          top: Math.max(0, targetScrollTop),
+          behavior: 'smooth'
+        });
+      }
+    }
+  }, [selectedSegmentId]);
 
   // Handle edit segment
   const handleEditSegment = useCallback((segment: CaptionSegment) => {
@@ -151,7 +184,7 @@ export function CaptionEditor({ className }: CaptionEditorProps) {
       </div>
 
       {/* Segments List */}
-      <div className="max-h-96 overflow-y-auto">
+      <div ref={segmentListRef} className="max-h-96 overflow-y-auto">
         {segments.length === 0 ? (
           <div className="p-8 text-center text-gray-500">
             <div className="text-4xl mb-4">✨</div>
@@ -174,8 +207,11 @@ export function CaptionEditor({ className }: CaptionEditorProps) {
               return (
                 <div
                   key={segment.id}
-                  className={`p-4 hover:bg-gray-50 transition-colors cursor-pointer ${
-                    isSelected ? 'bg-blue-50 border-l-4 border-blue-500' : ''
+                  ref={isSelected ? selectedSegmentRef : null}
+                  className={`p-4 transition-all duration-200 cursor-pointer ${
+                    isSelected 
+                      ? 'bg-blue-100 border-l-4 border-blue-500 shadow-sm transform translate-x-1' 
+                      : 'hover:bg-gray-50 hover:translate-x-0.5'
                   }`}
                   onClick={() => !isEditing && handleSegmentClick(segment)}
                 >

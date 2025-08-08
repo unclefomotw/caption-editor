@@ -23,6 +23,8 @@ export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
     setIsPlaying,
     setVideoReady,
     selectSegmentByTime,
+    setCaptionFile,
+    captionFile,
   } = useCaptionStore();
 
   // Handle file upload
@@ -86,6 +88,51 @@ export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
       setVideoDuration(duration);
       setVideoReady(true);
       console.log('✅ Duration set successfully:', duration);
+      
+      // Auto-generate sample caption file if none exists
+      if (!captionFile) {
+        const sampleCaptionFile = {
+          id: `caption_${Date.now()}`,
+          title: 'Auto-generated Captions',
+          language: 'en',
+          format: 'vtt' as const,
+          segments: [
+            {
+              id: 'sample_1',
+              startTime: 0,
+              endTime: 3,
+              text: 'Welcome to the video! This is the first caption segment.',
+              confidence: 0.95,
+            },
+            {
+              id: 'sample_2', 
+              startTime: 3,
+              endTime: 7,
+              text: 'You can click on any caption to jump to that part of the video.',
+              confidence: 0.92,
+            },
+            {
+              id: 'sample_3',
+              startTime: 7,
+              endTime: 12,
+              text: 'Try editing the text by clicking the edit button next to each segment.',
+              confidence: 0.88,
+            },
+            {
+              id: 'sample_4',
+              startTime: 12,
+              endTime: Math.min(duration, 18),
+              text: 'The captions will highlight automatically as the video plays.',
+              confidence: 0.90,
+            },
+          ].filter(segment => segment.endTime <= duration), // Only include segments within video duration
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        
+        console.log('🎬 Auto-generating sample caption file with', sampleCaptionFile.segments.length, 'segments');
+        setCaptionFile(sampleCaptionFile);
+      }
     }
   }, [setVideoDuration, setVideoReady]);
 
@@ -147,13 +194,21 @@ export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
   // Skip forward/backward
   const skipForward = useCallback(() => {
     const newTime = Math.min(video.currentTime + 10, video.duration);
-    playerRef.current?.seekTo(newTime, 'seconds');
-  }, [video.currentTime, video.duration]);
+    if (playerRef.current) {
+      playerRef.current.currentTime = newTime;
+    }
+    setCurrentTime(newTime);
+    selectSegmentByTime(newTime);
+  }, [video.currentTime, video.duration, setCurrentTime, selectSegmentByTime]);
 
   const skipBackward = useCallback(() => {
     const newTime = Math.max(video.currentTime - 10, 0);
-    playerRef.current?.seekTo(newTime, 'seconds');
-  }, [video.currentTime]);
+    if (playerRef.current) {
+      playerRef.current.currentTime = newTime;
+    }
+    setCurrentTime(newTime);
+    selectSegmentByTime(newTime);
+  }, [video.currentTime, setCurrentTime, selectSegmentByTime]);
 
   // Format time for display
   const formatTime = (seconds: number) => {

@@ -1,0 +1,2 @@
+Now, I want you to hand over the work to your successor.
+Please record the project progress, status, critical rule of thumbs to follow in @CLAUDE.md

@@ -1,0 +1,5 @@
+Your job is to build a web app for users to edit captions for their videos.
+The PRD is @docs/prd-draft.md .
+Your predecessor has made an action plan in @docs/plan.md ,
+and noted the project progress, current status, and things to follow under @CLAUDE.md .
+Read through them so you have an idea how to take over.
