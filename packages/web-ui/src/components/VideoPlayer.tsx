@@ -1,11 +1,11 @@
 'use client';
 
-import { useRef, useCallback, useEffect } from 'react';
-import ReactPlayer from 'react-player';
-import { useCaptionStore } from '@/stores/caption-store';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Play, Pause, Volume2, Maximize2, RotateCcw } from 'lucide-react';
+import { useCaptionStore } from '@/stores/caption-store';
+import { Maximize2, Pause, Play, RotateCcw, Volume2 } from 'lucide-react';
+import { useCallback, useEffect, useRef } from 'react';
+import ReactPlayer from 'react-player';
 
 interface VideoPlayerProps {
   className?: string;
@@ -13,8 +13,8 @@ interface VideoPlayerProps {
 }
 
 export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
-  const playerRef = useRef<ReactPlayer | null>(null);
-  
+  const playerRef = useRef<any>(null);
+
   const {
     video,
     setVideoUrl,
@@ -27,47 +27,102 @@ export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
 
   // Handle file upload
   const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('🔥 FILE UPLOAD HANDLER CALLED!');
+    console.log('Files count:', event.target.files?.length || 0);
+
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      console.log('❌ No file selected');
+      return;
+    }
+
+    console.log('📁 File details:', {
+      name: file.name,
+      type: file.type,
+      size: file.size
+    });
 
     // Validate file type
     const supportedTypes = ['video/mp4', 'video/mov', 'video/quicktime', 'video/x-m4v'];
     if (!supportedTypes.includes(file.type)) {
+      console.log('❌ Unsupported file type:', file.type);
       alert('Please select a supported video file (.mp4, .mov, .m4v)');
       return;
     }
 
+    // Create blob URL and update state
     const url = URL.createObjectURL(file);
+    console.log('🔗 Created blob URL:', url);
+
+    console.log('🔄 Updating Zustand state...');
     setVideoUrl(url);
+    setVideoDuration(0);
+    setCurrentTime(0);
+    setVideoReady(false);
+    setIsPlaying(false);
+
+    console.log('✅ State updated! Calling onVideoLoad...');
     onVideoLoad?.(url);
-  }, [setVideoUrl, onVideoLoad]);
+    console.log('🎬 File upload process complete!');
+  }, [setVideoUrl, setVideoDuration, setCurrentTime, setVideoReady, setIsPlaying, onVideoLoad]);
 
 
-  // Handle progress updates
-  const handleProgress = useCallback((progress: { playedSeconds: number, loadedSeconds: number, played: number, loaded: number }) => {
-    setCurrentTime(progress.playedSeconds);
-    selectSegmentByTime(progress.playedSeconds);
-    
-    // Set duration if we haven't got it yet and player is ready
-    if (!video.isReady && playerRef.current) {
-      const duration = playerRef.current.getDuration();
-      if (duration && duration > 0) {
-        setVideoDuration(duration);
-        setVideoReady(true);
-      }
-    }
-  }, [setCurrentTime, selectSegmentByTime, video.isReady, setVideoDuration, setVideoReady]);
+  // Handle time updates (HTML5 video event)
+  const handleTimeUpdate = useCallback((event: React.SyntheticEvent<HTMLVideoElement>) => {
+    const target = event.target as HTMLVideoElement;
+    const currentTime = target.currentTime;
 
-  // Handle when video can start playing (has loaded metadata)
-  const handleCanPlay = useCallback(() => {
-    if (playerRef.current) {
-      const duration = playerRef.current.getDuration();
-      if (duration && duration > 0) {
-        setVideoDuration(duration);
-        setVideoReady(true);
-      }
+    setCurrentTime(currentTime);
+    selectSegmentByTime(currentTime);
+  }, [setCurrentTime, selectSegmentByTime]);
+
+  // Handle duration change (HTML5 video event)
+  const handleDurationChange = useCallback((event: React.SyntheticEvent<HTMLVideoElement>) => {
+    const target = event.target as HTMLVideoElement;
+    const duration = target.duration;
+    console.log('HTML5 onDurationChange - duration:', duration);
+
+    if (duration && duration > 0 && !isNaN(duration)) {
+      setVideoDuration(duration);
+      setVideoReady(true);
+      console.log('✅ Duration set successfully:', duration);
     }
   }, [setVideoDuration, setVideoReady]);
+
+  // Add debugging effect to see what's happening with video element
+  useEffect(() => {
+    console.log('🔍 VideoPlayer effect - checking video element state...');
+    if (video.url) {
+      setTimeout(() => {
+        const videoElement = document.querySelector('video');
+        if (videoElement) {
+          console.log('📊 Video element properties:', {
+            src: videoElement.src,
+            duration: videoElement.duration,
+            readyState: videoElement.readyState,
+            networkState: videoElement.networkState,
+            error: videoElement.error
+          });
+        } else {
+          console.log('❌ No video element found in DOM');
+        }
+      }, 1000);
+    }
+  }, [video.url]);
+
+  // Handle when video starts playing
+  const handlePlay = useCallback(() => {
+    console.log('ReactPlayer onPlay called');
+    setIsPlaying(true);
+
+    // Duration should be handled by onReady callback
+  }, [setIsPlaying]);
+
+  // Handle video errors
+  const handleError = useCallback((error: any) => {
+    console.error('ReactPlayer error:', error);
+  }, []);
+
 
   // Handle play/pause
   const togglePlayPause = useCallback(() => {
@@ -75,10 +130,16 @@ export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
     setIsPlaying(newPlayingState);
   }, [video.isPlaying, setIsPlaying]);
 
-  // Handle seek
+  // Handle seek (v3.x uses HTMLMediaElement interface)
   const handleSeek = useCallback((values: number[]) => {
     const seekTime = values[0];
-    playerRef.current?.seekTo(seekTime, 'seconds');
+
+    // Use ReactPlayer ref with HTMLMediaElement interface
+    if (playerRef.current) {
+      playerRef.current.currentTime = seekTime;
+      console.log('🎯 Seeking to:', seekTime);
+    }
+
     setCurrentTime(seekTime);
     selectSegmentByTime(seekTime);
   }, [setCurrentTime, selectSegmentByTime]);
@@ -100,6 +161,15 @@ export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
+
+  // Clean up blob URL when component unmounts
+  useEffect(() => {
+    return () => {
+      if (video.url && video.url.startsWith('blob:')) {
+        URL.revokeObjectURL(video.url);
+      }
+    };
+  }, [video.url]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -127,6 +197,7 @@ export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [togglePlayPause, skipBackward, skipForward]);
+
 
   return (
     <div className={`bg-black rounded-lg overflow-hidden ${className}`}>
@@ -160,24 +231,18 @@ export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
         <div className="relative group">
           <ReactPlayer
             ref={playerRef}
-            url={video.url}
+            src={video.url}
             width="100%"
             height="auto"
             playing={video.isPlaying}
-            onProgress={handleProgress}
-            onPlay={() => setIsPlaying(true)}
+            onTimeUpdate={handleTimeUpdate}
+            onDurationChange={handleDurationChange}
+            onPlay={handlePlay}
             onPause={() => setIsPlaying(false)}
-            onLoadedMetadata={handleCanPlay}
-            progressInterval={100}
-            config={{
-              file: {
-                attributes: {
-                  style: { width: '100%', height: 'auto' }
-                }
-              }
-            }}
+            onError={handleError}
+            controls={false}
           />
-          
+
           {/* Video Controls Overlay */}
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 opacity-0 group-hover:opacity-100 transition-opacity">
             {/* Progress Bar */}
@@ -194,7 +259,7 @@ export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
                 <span>{formatTime(video.duration)}</span>
               </div>
             </div>
-            
+
             {/* Control Buttons */}
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
@@ -206,7 +271,7 @@ export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
                 >
                   <RotateCcw className="w-4 h-4" />
                 </Button>
-                
+
                 <Button
                   variant="ghost"
                   size="sm"
@@ -219,7 +284,7 @@ export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
                     <Play className="w-4 h-4" />
                   )}
                 </Button>
-                
+
                 <Button
                   variant="ghost"
                   size="sm"
@@ -229,7 +294,7 @@ export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
                   <RotateCcw className="w-4 h-4 scale-x-[-1]" />
                 </Button>
               </div>
-              
+
               <div className="flex items-center space-x-2">
                 <Button
                   variant="ghost"
@@ -238,7 +303,7 @@ export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
                 >
                   <Volume2 className="w-4 h-4" />
                 </Button>
-                
+
                 <Button
                   variant="ghost"
                   size="sm"
