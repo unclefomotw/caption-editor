@@ -12,29 +12,62 @@ This project is a monorepo powered by [Turborepo](https://turbo.build/), contain
 
 ## Getting Started
 
-Follow these instructions to get the project set up and running on your local machine for development and testing.
+Follow these instructions to get the project set up for development.
 
-### Prerequisites
+### 1. Prerequisites
 
-- Node.js (v20.x or later recommended)
-- Python (v3.11 or later recommended)
-- Poetry for managing Python dependencies.
+- **Node.js**: v20.x or later recommended.
+- **Python**: v3.11 or later recommended.
+- **Poetry**: For managing Python dependencies.
+- **Docker**: Required for the Docker Compose development method.
+- **AssemblyAI API Key**: Required for video transcription. Get a free key [here](https://www.assemblyai.com/dashboard/signup).
 
-### 1. Installation
+### 2. Initial Setup
 
-First, clone the repository and install the dependencies.
+First, clone the repository and install the Node.js dependencies.
 
 ```bash
-# Clone the repository
 git clone <repository-url>
 cd caption-editor
-
-# Install Node.js dependencies for all workspaces
 npm install
 ```
 
-Next, set up the Python environment for the API server.
+Next, set your AssemblyAI API key as an environment variable. This is required for the application to function.
 
+```bash
+# Export your API key in your shell
+export ASSEMBLYAI_API_KEY="your-actual-api-key-here"
+
+# Verify it's set
+echo $ASSEMBLYAI_API_KEY
+```
+
+### 3. Running the Application (Development)
+
+You have two primary options for running the development environment. Choose the one that best fits your workflow.
+
+#### Option 1: Docker Compose (Recommended for Full Stack)
+
+This method starts both the frontend and backend services in a consistent, containerized environment.
+
+- **Pros**: Consistent environment, both services start together, production-like setup.
+- **Cons**: Slightly slower hot-reloading.
+
+```bash
+# Start both frontend and backend services
+npm run docker:dev
+```
+- **Frontend**: `http://localhost:3000`
+- **Backend**: `http://localhost:8000`
+
+#### Option 2: Native Development (for Individual Services)
+
+This method provides the fastest iteration speed and is ideal when focusing on a single service. You will need to set up the Python environment manually.
+
+- **Pros**: Fastest hot-reloading, direct debugging access.
+- **Cons**: Requires managing separate terminal processes.
+
+**Setup Python Environment (One-time only):**
 ```bash
 # Navigate to the API server package
 cd packages/api-server
@@ -43,32 +76,46 @@ cd packages/api-server
 poetry install
 ```
 
-### 2. Running the Development Servers
-
-This project uses [Turborepo](https://turbo.build/) to manage the monorepo. You can start both the front-end and back-end servers with a single command from the project root.
-
+**Run Services (in separate terminals):**
 ```bash
-# From the root of the project
+# --- Terminal 1: Start Frontend ---
+# From the project root
+cd packages/web-ui
 npm run dev
+# Frontend available at http://localhost:3000
 ```
-
-This will:
-- Start the Next.js development server for the **web-ui** on `http://localhost:3000`.
-- Start the FastAPI development server for the **api-server** on `http://localhost:8000`.
-
-You can now open your browser to `http://localhost:3000` to use the application.
-
-## Code Formatting and Linting
-
-To ensure code consistency and quality, this project uses Prettier for formatting and ESLint for linting. You can run the following commands to format and lint the `web-ui` package:
 
 ```bash
-# Format the code in the web-ui package
-npm run format -w packages/web-ui
-
-# Lint the code and automatically fix issues in the web-ui package
-npm run lint:fix -w packages/web-ui
+# --- Terminal 2: Start Backend ---
+# From the project root
+cd packages/api-server
+poetry run uvicorn caption_editor_api.main:app --reload
+# Backend available at http://localhost:8000
 ```
+
+## Other Common Commands
+
+All commands should be run from the project root.
+
+- **Build all packages**:
+  ```bash
+  npm run build
+  ```
+
+- **Lint all packages**:
+  ```bash
+  npm run lint
+  ```
+
+- **Format all code**:
+  ```bash
+  npm run format
+  ```
+
+- **Regenerate shared TypeScript types**:
+  ```bash
+  npm run generate-types
+  ```
 
 ## License
 
