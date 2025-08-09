@@ -58,6 +58,18 @@ This will:
 
 You can now open your browser to `http://localhost:3000` to use the application.
 
+## Code Formatting and Linting
+
+To ensure code consistency and quality, this project uses Prettier for formatting and ESLint for linting. You can run the following commands to format and lint the `web-ui` package:
+
+```bash
+# Format the code in the web-ui package
+npm run format -w packages/web-ui
+
+# Lint the code and automatically fix issues in the web-ui package
+npm run lint:fix -w packages/web-ui
+```
+
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.
