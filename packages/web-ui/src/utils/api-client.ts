@@ -58,7 +58,9 @@ export class ApiClient {
   /**
    * Start AI transcription of a video
    */
-  async startTranscription(request: TranscriptionRequest): Promise<TranscriptionResponse> {
+  async startTranscription(
+    request: TranscriptionRequest
+  ): Promise<TranscriptionResponse> {
     const response = await fetch(`${API_BASE_URL}/captions/transcribe`, {
       method: 'POST',
       headers: {
@@ -79,7 +81,9 @@ export class ApiClient {
    * Get transcription result by job ID
    */
   async getTranscriptionResult(jobId: string): Promise<TranscriptionResponse> {
-    const response = await fetch(`${API_BASE_URL}/captions/transcribe/${jobId}`);
+    const response = await fetch(
+      `${API_BASE_URL}/captions/transcribe/${jobId}`
+    );
 
     if (!response.ok) {
       const errorData = await response.json();
@@ -92,9 +96,13 @@ export class ApiClient {
   /**
    * Check backend health
    */
-  async healthCheck(): Promise<{ status: string; message: string; version: string }> {
+  async healthCheck(): Promise<{
+    status: string;
+    message: string;
+    version: string;
+  }> {
     const response = await fetch(`${API_BASE_URL}/health`);
-    
+
     if (!response.ok) {
       throw new Error('Backend health check failed');
     }

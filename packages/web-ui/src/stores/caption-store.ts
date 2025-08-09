@@ -112,7 +112,7 @@ export const useCaptionStore = create<CaptionStore>()(
         isEditing: false,
         lastSaved: null,
         captionsCleared: false,
-        
+
         // API state
         transcription: {
           jobId: null,
@@ -620,7 +620,8 @@ export const useCaptionStore = create<CaptionStore>()(
                 transcription: {
                   ...state.transcription,
                   status: 'error',
-                  error: error instanceof Error ? error.message : 'Upload failed',
+                  error:
+                    error instanceof Error ? error.message : 'Upload failed',
                 },
               }),
               false,
@@ -675,7 +676,10 @@ export const useCaptionStore = create<CaptionStore>()(
                 transcription: {
                   ...state.transcription,
                   status: 'error',
-                  error: error instanceof Error ? error.message : 'Transcription failed',
+                  error:
+                    error instanceof Error
+                      ? error.message
+                      : 'Transcription failed',
                 },
               }),
               false,
@@ -691,7 +695,9 @@ export const useCaptionStore = create<CaptionStore>()(
               throw new Error('No transcription job ID available');
             }
 
-            const response = await apiClient.getTranscriptionResult(state.transcription.jobId);
+            const response = await apiClient.getTranscriptionResult(
+              state.transcription.jobId
+            );
             console.log('🔍 Transcription status:', response);
 
             if (response.status === 'completed' && response.captions) {
@@ -747,7 +753,10 @@ export const useCaptionStore = create<CaptionStore>()(
                 transcription: {
                   ...state.transcription,
                   status: 'error',
-                  error: error instanceof Error ? error.message : 'Status check failed',
+                  error:
+                    error instanceof Error
+                      ? error.message
+                      : 'Status check failed',
                 },
               }),
               false,

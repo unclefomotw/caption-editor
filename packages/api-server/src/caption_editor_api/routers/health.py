@@ -8,7 +8,7 @@ router = APIRouter()
 
 class HealthResponse(BaseModel):
     """Health check response model."""
-    
+
     status: str
     message: str
     version: str = "0.1.0"
@@ -17,7 +17,4 @@ class HealthResponse(BaseModel):
 @router.get("/health", response_model=HealthResponse)
 async def health_check():
     """Health check endpoint."""
-    return HealthResponse(
-        status="healthy",
-        message="Caption Editor API is running"
-    )
+    return HealthResponse(status="healthy", message="Caption Editor API is running")

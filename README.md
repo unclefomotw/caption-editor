@@ -57,6 +57,7 @@ This method starts both the frontend and backend services in a consistent, conta
 # Start both frontend and backend services
 npm run docker:dev
 ```
+
 - **Frontend**: `http://localhost:3000`
 - **Backend**: `http://localhost:8000`
 
@@ -68,6 +69,7 @@ This method provides the fastest iteration speed and is ideal when focusing on a
 - **Cons**: Requires managing separate terminal processes.
 
 **Setup Python Environment (One-time only):**
+
 ```bash
 # Navigate to the API server package
 cd packages/api-server
@@ -77,6 +79,7 @@ poetry install
 ```
 
 **Run Services (in separate terminals):**
+
 ```bash
 # --- Terminal 1: Start Frontend ---
 # From the project root
@@ -98,18 +101,18 @@ poetry run uvicorn caption_editor_api.main:app --reload
 All commands should be run from the project root.
 
 - **Build all packages**:
+
   ```bash
   npm run build
   ```
 
-- **Lint all packages**:
+- **Lint / format**:
+
   ```bash
   npm run lint
-  ```
-
-- **Format all code**:
-  ```bash
   npm run format
+  npm run format -w packages/web-ui
+  npm run lint:api  # for api-server python codes
   ```
 
 - **Regenerate shared TypeScript types**:

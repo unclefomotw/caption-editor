@@ -3,7 +3,8 @@
 /**
  * Request model for AI transcription
  */
-export type TranscriptionRequest = TranscriptionRequest1 & TranscriptionRequest2;
+export type TranscriptionRequest = TranscriptionRequest1 &
+  TranscriptionRequest2;
 export type TranscriptionRequest2 = {
   [k: string]: unknown;
 };

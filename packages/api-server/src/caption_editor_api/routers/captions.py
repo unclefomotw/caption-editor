@@ -72,12 +72,12 @@ async def upload_video(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="No filename provided")
 
     # Check supported video formats
-    supported_extensions = ['.mp4', '.mov', '.m4v']
+    supported_extensions = [".mp4", ".mov", ".m4v"]
     file_ext = os.path.splitext(file.filename)[1].lower()
     if file_ext not in supported_extensions:
         raise HTTPException(
             status_code=400,
-            detail=f"Unsupported video format. Supported formats: {', '.join(supported_extensions)}"
+            detail=f"Unsupported video format. Supported formats: {', '.join(supported_extensions)}",
         )
 
     # Create temporary file to store the video
@@ -99,17 +99,16 @@ async def upload_video(file: UploadFile = File(...)):
         video_id=video_id,
         filename=file.filename,
         size=len(content),
-        message=f"Video '{file.filename}' uploaded successfully. Ready for transcription."
+        message=f"Video '{file.filename}' uploaded successfully. Ready for transcription.",
     )
 
 
 @router.post("/captions/upload", response_model=CaptionFile)
 async def upload_caption_file(file: UploadFile = File(...)):
     """Upload and parse a caption file (VTT/SRT)."""
-    if not file.filename or not file.filename.endswith(('.vtt', '.srt')):
+    if not file.filename or not file.filename.endswith((".vtt", ".srt")):
         raise HTTPException(
-            status_code=400,
-            detail="Only VTT and SRT files are supported"
+            status_code=400, detail="Only VTT and SRT files are supported"
         )
 
     # TODO: Implement actual file parsing
@@ -117,10 +116,7 @@ async def upload_caption_file(file: UploadFile = File(...)):
     return CaptionFile(
         segments=[
             CaptionSegment(
-                id="1",
-                start_time=0.0,
-                end_time=3.0,
-                text="Sample caption segment"
+                id="1", start_time=0.0, end_time=3.0, text="Sample caption segment"
             )
         ]
     )
@@ -132,7 +128,7 @@ async def transcribe_video(request: TranscriptionRequest):
     if not request.video_id and not request.video_url:
         raise HTTPException(
             status_code=400,
-            detail="Either video_id (for uploaded video) or video_url is required"
+            detail="Either video_id (for uploaded video) or video_url is required",
         )
 
     try:
@@ -143,8 +139,7 @@ async def transcribe_video(request: TranscriptionRequest):
             # Use uploaded video file
             if request.video_id not in video_files:
                 raise HTTPException(
-                    status_code=404,
-                    detail=f"Video ID '{request.video_id}' not found"
+                    status_code=404, detail=f"Video ID '{request.video_id}' not found"
                 )
             video_source = video_files[request.video_id]
         else:
@@ -153,9 +148,7 @@ async def transcribe_video(request: TranscriptionRequest):
 
         # Configure transcription with word-level timestamps
         config = aai.TranscriptionConfig(
-            language_detection=True,
-            punctuate=True,
-            format_text=True
+            language_detection=True, punctuate=True, format_text=True
         )
 
         # Submit transcription job to AssemblyAI
@@ -168,19 +161,18 @@ async def transcribe_video(request: TranscriptionRequest):
             "transcript": transcript,
             "status": "processing",
             "video_source": request.video_id or request.video_url,
-            "language": request.language or "en"
+            "language": request.language or "en",
         }
 
         return TranscriptionResponse(
             status="processing",
             job_id=job_id,
-            message="Transcription started successfully with AssemblyAI"
+            message="Transcription started successfully with AssemblyAI",
         )
 
     except Exception as e:
         raise HTTPException(
-            status_code=500,
-            detail=f"Failed to start transcription: {str(e)}"
+            status_code=500, detail=f"Failed to start transcription: {str(e)}"
         )
 
 
@@ -189,8 +181,7 @@ async def get_transcription_result(job_id: str):
     """Get transcription result by job ID."""
     if job_id not in transcription_jobs:
         raise HTTPException(
-            status_code=404,
-            detail=f"Transcription job '{job_id}' not found"
+            status_code=404, detail=f"Transcription job '{job_id}' not found"
         )
 
     job_info = transcription_jobs[job_id]
@@ -213,12 +204,14 @@ async def get_transcription_result(job_id: str):
 
                 for word in current_transcript.words:
                     if segment_start_time is None:
-                        segment_start_time = word.start / 1000.0  # Convert ms to seconds
+                        segment_start_time = (
+                            word.start / 1000.0
+                        )  # Convert ms to seconds
 
                     current_segment_words.append(word.text)
 
                     # End segment on punctuation or after ~5 seconds
-                    is_end_of_sentence = word.text.endswith(('.', '!', '?'))
+                    is_end_of_sentence = word.text.endswith((".", "!", "?"))
                     segment_duration = (word.end / 1000.0) - segment_start_time
                     should_end_segment = is_end_of_sentence or segment_duration >= 5.0
 
@@ -228,7 +221,7 @@ async def get_transcription_result(job_id: str):
                             id=str(segment_id),
                             start_time=segment_start_time,
                             end_time=word.end / 1000.0,  # Convert ms to seconds
-                            text=" ".join(current_segment_words)
+                            text=" ".join(current_segment_words),
                         )
                         segments.append(segment)
 
@@ -244,7 +237,7 @@ async def get_transcription_result(job_id: str):
                 status="completed",
                 job_id=job_id,
                 captions=CaptionFile(segments=segments),
-                message="Transcription completed successfully"
+                message="Transcription completed successfully",
             )
 
         elif current_transcript.status == aai.TranscriptStatus.error:
@@ -254,7 +247,7 @@ async def get_transcription_result(job_id: str):
             return TranscriptionResponse(
                 status="error",
                 job_id=job_id,
-                message=f"Transcription failed: {current_transcript.error}"
+                message=f"Transcription failed: {current_transcript.error}",
             )
 
         else:
@@ -262,12 +255,12 @@ async def get_transcription_result(job_id: str):
             return TranscriptionResponse(
                 status="processing",
                 job_id=job_id,
-                message="Transcription is still in progress"
+                message="Transcription is still in progress",
             )
 
     except Exception as e:
         return TranscriptionResponse(
             status="error",
             job_id=job_id,
-            message=f"Error checking transcription status: {str(e)}"
+            message=f"Error checking transcription status: {str(e)}",
         )

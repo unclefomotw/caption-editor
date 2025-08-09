@@ -1,17 +1,20 @@
 # Caption Editor - Claude Development Notes
 
 ## Project Overview
+
 Building a web application for editing video captions with AI-powered transcription capabilities.
 
 ## Tech Stack Implemented
 
 ### Frontend (packages/web-ui)
+
 - **Next.js 15.4.6** with TypeScript
 - **Tailwind CSS** for styling
 - **Shadcn/ui** components library
 - **App Router** with src directory structure
 
 ### Backend (packages/api-server)
+
 - **FastAPI** with Python 3.11+
 - **Poetry** for dependency management. Use Poetry 2.1
 - **Pydantic** for data validation
@@ -20,11 +23,13 @@ Building a web application for editing video captions with AI-powered transcript
 - **Docker Compose** development environment with environment variable passthrough
 
 ### Shared Types (packages/common-types)
+
 - **JSON Schema** for data structure definitions
 - **TypeScript generation** from JSON schemas
 - **Workspace linking** for type sharing across packages
 
 ### Monorepo Setup
+
 - **Turborepo** for build orchestration
 - **npm workspaces** for JavaScript packages
 - **Poetry** for Python package management
@@ -32,6 +37,7 @@ Building a web application for editing video captions with AI-powered transcript
 ## Current Status
 
 ### ✅ Completed
+
 1. **Monorepo structure** with proper workspace configuration
 2. **Next.js frontend** with Shadcn/ui setup - fully functional
 3. **FastAPI backend** with complete router structure and dependencies
@@ -73,12 +79,14 @@ Building a web application for editing video captions with AI-powered transcript
     - Hot reload support for both frontend and backend
 
 ### ❌ Not Started
+
 - Frontend AI transcription UI integration (backend complete, frontend UI missing)
 - End-to-end workflow testing (video → AI → caption editing)
 
 ## How to Run/Test
 
 ### Docker Compose (RECOMMENDED for Full Stack Development)
+
 ```bash
 # PREREQUISITE: Export AssemblyAI API Key
 export ASSEMBLYAI_API_KEY="your-actual-api-key-here"
@@ -86,12 +94,14 @@ export ASSEMBLYAI_API_KEY="your-actual-api-key-here"
 # Start both frontend and backend in Docker
 npm run docker:dev
 ```
+
 - ✅ **Frontend**: http://localhost:3000 (Next.js with hot reload)
 - ✅ **Backend**: http://localhost:8000 (FastAPI with AssemblyAI integration)
 - ✅ **API Docs**: http://localhost:8000/docs
 - ✅ **Complete environment** with all dependencies and AI functionality
 
 ### Native Development (Alternative)
+
 ```bash
 # Frontend only (fastest hot reload)
 cd packages/web-ui
@@ -103,6 +113,7 @@ poetry run uvicorn caption_editor_api.main:app --reload
 ```
 
 ### Testing AssemblyAI Backend Integration
+
 ```bash
 # 1. Test video upload
 curl -X POST "http://localhost:8000/api/videos/upload" \
@@ -119,6 +130,7 @@ curl "http://localhost:8000/api/captions/transcribe/JOB_ID_FROM_START"
 ```
 
 ### Build Commands
+
 ```bash
 npm run build        # Build all packages (includes type generation)
 npm run lint         # Lint all packages
@@ -126,6 +138,7 @@ npm run generate-types  # Generate TypeScript types from JSON schemas
 ```
 
 ### Type Generation System
+
 ```bash
 # Regenerate types after schema changes
 cd packages/common-types
@@ -164,12 +177,14 @@ caption-editor/
 ## Rules for Successors
 
 ### Development Workflow
+
 1. **Always run commands from project root** when using Turborepo
 2. **Use workspace commands**: `npm run dev` instead of individual package commands
 3. **Test both frontend and backend** after making changes
 4. **Generate types after schema changes**: Run `npm run build` to regenerate TypeScript types
 
 ### Code Standards
+
 1. **Follow existing file structure** - don't create new top-level directories
 2. **Use TypeScript** for all frontend code with strict typing
 3. **Use Poetry 2.1** for Python dependency management (not pip/venv)
@@ -177,15 +192,18 @@ caption-editor/
 5. **Import types from common-types**: Always use shared types for consistency
 
 ### Type System Rules
+
 1. **Modify schemas, not generated types** - Edit `.json` files, not `.ts` files
 2. **Run type generation after schema changes** - `npm run build` or `npm run generate-types`
 3. **Use shared types everywhere** - Import from `@caption-editor/common-types`
 4. **Don't create duplicate type definitions** - Use the shared schemas
 
 ### 🚨 CRITICAL ReactPlayer Implementation Rules
+
 **MUST READ**: ReactPlayer v3.3.1 documentation is misleading. Follow these patterns:
 
 1. **Use HTML5 event signatures, NOT ReactPlayer callbacks**:
+
    ```tsx
    // ✅ CORRECT - HTML5 events
    onTimeUpdate={(event: React.SyntheticEvent<HTMLVideoElement>) => {
@@ -201,14 +219,16 @@ caption-editor/
    ```
 
 2. **Use correct prop names**:
+
    ```tsx
    <ReactPlayer
-     src={videoUrl}      // ✅ CORRECT - use 'src'
-     url={videoUrl}      // ❌ WRONG - will cause TypeScript errors
+     src={videoUrl} // ✅ CORRECT - use 'src'
+     url={videoUrl} // ❌ WRONG - will cause TypeScript errors
    />
    ```
 
 3. **Use HTMLMediaElement interface for player control**:
+
    ```tsx
    // ✅ CORRECT - HTMLMediaElement methods
    playerRef.current.currentTime = seekTime;
@@ -226,9 +246,11 @@ caption-editor/
 See `docs/reactplayer-reality-guide.md` for complete details.
 
 ### 🚨 CRITICAL Bidirectional Synchronization Implementation Rules
+
 **MUST READ**: Key patterns for maintaining video/caption sync that have been tested and verified:
 
 1. **Auto-generate sample captions on video load**:
+
    ```tsx
    // In handleDurationChange after setVideoReady(true)
    if (!captionFile) {
@@ -240,15 +262,17 @@ See `docs/reactplayer-reality-guide.md` for complete details.
    ```
 
 2. **Use HTML5 video element for direct seeking**:
+
    ```tsx
    // When clicking caption segments
-   const videoElement = document.querySelector('video');
+   const videoElement = document.querySelector("video");
    if (videoElement) {
      videoElement.currentTime = segment.startTime;
    }
    ```
 
 3. **Implement smooth auto-scrolling with refs**:
+
    ```tsx
    const segmentListRef = useRef<HTMLDivElement>(null);
    const selectedSegmentRef = useRef<HTMLDivElement>(null);
@@ -271,6 +295,7 @@ See `docs/reactplayer-reality-guide.md` for complete details.
    ```
 
 ### 🚨 CRITICAL VTT/SRT Parsing Implementation Rules
+
 **Custom parser implementation** - No third-party libraries used for lightweight bundle:
 
 1. **Parser location**: `src/utils/caption-parsers.ts`
@@ -287,18 +312,22 @@ See `docs/reactplayer-reality-guide.md` for complete details.
    - **Multi-line caption support**: Concatenates text across lines
 
 4. **File I/O patterns**:
+
    ```tsx
    // Import: File dialog → text() → parse → setCaptionFile()
-   const file = await openFileDialog('.vtt,.srt');
+   const file = await openFileDialog(".vtt,.srt");
    const content = await file.text();
-   const captionData = file.name.endsWith('.vtt') ? parseVTT(content) : parseSRT(content);
+   const captionData = file.name.endsWith(".vtt")
+     ? parseVTT(content)
+     : parseSRT(content);
 
    // Export: captionFile → format → download
    const vttContent = exportToVTT(captionFile);
-   downloadFile(vttContent, 'captions.vtt', 'text/vtt');
+   downloadFile(vttContent, "captions.vtt", "text/vtt");
    ```
 
 ### 🚨 CRITICAL localStorage Persistence Implementation Rules
+
 **FULLY WORKING** - Implements complete recovery spec with all edge cases handled:
 
 1. **Recovery specification** (all 3 test cases PASS):
@@ -307,15 +336,17 @@ See `docs/reactplayer-reality-guide.md` for complete details.
    - ✅ **No restore for different file**: Captions stay cleared for different videos
 
 2. **File metadata matching**:
+
    ```typescript
    interface VideoFileMetadata {
-     name: string;          // Exact filename match required
-     size: number;          // Byte-perfect size match required
-     lastModified: number;  // Exact timestamp match required
+     name: string; // Exact filename match required
+     size: number; // Byte-perfect size match required
+     lastModified: number; // Exact timestamp match required
    }
    ```
 
 3. **Critical implementation patterns**:
+
    ```typescript
    // Store caption data AND file metadata together
    const persistedState = {
@@ -331,7 +362,7 @@ See `docs/reactplayer-reality-guide.md` for complete details.
 
    // Preserve localStorage during startup clearing
    if (state.captionsCleared && state.captionFile === null) {
-     const existingData = localStorage.getItem('caption-editor-store');
+     const existingData = localStorage.getItem("caption-editor-store");
      // Preserve both captionFile AND videoFileMetadata
    }
    ```
@@ -347,6 +378,7 @@ See `docs/reactplayer-reality-guide.md` for complete details.
 7. **Debugging**: Console logs with 🔧 🔍 ✅ ❌ prefixes for persistence tracking
 
 ### 🚨 CRITICAL AssemblyAI Backend Implementation Rules
+
 **FULLY WORKING** - Real AI transcription with production-ready error handling:
 
 1. **API Endpoints** (all tested and working):
@@ -357,6 +389,7 @@ See `docs/reactplayer-reality-guide.md` for complete details.
    - `POST /api/captions/upload` - Upload VTT/SRT files (legacy)
 
 2. **AssemblyAI Configuration** (tested with real API):
+
    ```python
    config = aai.TranscriptionConfig(
        language_detection=True,  # Auto-detect language
@@ -378,6 +411,7 @@ See `docs/reactplayer-reality-guide.md` for complete details.
    - Get API key: https://www.assemblyai.com/dashboard/signup
 
 5. **Error Handling Patterns**:
+
    ```python
    # Job tracking in memory (production should use Redis/DB)
    transcription_jobs = {}
@@ -394,23 +428,27 @@ See `docs/reactplayer-reality-guide.md` for complete details.
    - Cleanup handling (TODO: implement cleanup cron job)
 
 ### FastAPI Backend Dependencies
+
 - **AssemblyAI SDK v0.42.1** (upgraded from v0.17.0)
 - **FastAPI + Uvicorn** for async API serving
 - **Pydantic v2** for request/response validation
 - **python-multipart** for file upload handling
 
 ### Key Dependencies Already Added
+
 - **Frontend**: Next.js 15.4.6, Tailwind, Shadcn/ui, TypeScript
 - **Backend**: FastAPI, Uvicorn, Pydantic, AssemblyAI, HTTPX
 - **Types**: json-schema-to-typescript for automated generation
 
 ### Testing Strategy
+
 1. **Frontend**: Test component rendering and user interactions
 2. **Backend**: Test API endpoints manually via http://localhost:8000/docs
 3. **Types**: Verify TypeScript compilation after schema changes
 4. **Integration**: Test full video → AI → caption editing workflow
 
 ## Current API Endpoints (Working)
+
 - `GET /api/health` - System health check
 - `POST /api/captions/upload` - Upload VTT/SRT caption files
 - `POST /api/captions/transcribe` - Start AI video transcription
@@ -421,6 +459,7 @@ See `docs/reactplayer-reality-guide.md` for complete details.
 **The caption editor is now PRODUCTION-READY for core workflows.** All fundamental features are complete and tested.
 
 ### ✅ WHAT'S WORKING (Reference Summary)
+
 - **Video playback** with all controls and seeking
 - **Caption editing** with real-time text editing
 - **Bidirectional synchronization** (video ↔ captions) with smooth scrolling
@@ -431,7 +470,8 @@ See `docs/reactplayer-reality-guide.md` for complete details.
 
 ### 🎯 IMMEDIATE NEXT TASKS (Priority Order)
 
-**1. Frontend AI Transcription UI Integration** *(HIGH PRIORITY - Only Missing Piece)*
+**1. Frontend AI Transcription UI Integration** _(HIGH PRIORITY - Only Missing Piece)_
+
 - Add "Start AI Transcription" button to video upload UI
 - Implement video file upload to backend (`POST /api/videos/upload`)
 - Add transcription job polling (`GET /api/captions/transcribe/{job_id}`)
@@ -439,7 +479,8 @@ See `docs/reactplayer-reality-guide.md` for complete details.
 - Add loading states and progress indicators for transcription
 - Handle transcription errors gracefully with user feedback
 
-**2. Complete End-to-End Testing** *(Medium Priority)*
+**2. Complete End-to-End Testing** _(Medium Priority)_
+
 - Test full workflow: video upload → AI transcription → caption editing → export
 - Validate that AI-generated captions work with existing video/caption sync
 - Ensure localStorage persistence works with AI-generated captions
@@ -448,21 +489,25 @@ See `docs/reactplayer-reality-guide.md` for complete details.
 ### 🚀 FUTURE ENHANCEMENTS (Lower Priority)
 
 **Production Deployment**
+
 - Docker configurations for containerized deployment
 - Environment variable management
 - Production build optimizations
 
 **Advanced Features**
+
 - Video controls: volume, playback speed, fullscreen
 - Caption styling: font size, colors, positioning
 - Multi-language support and translation features
 
 **Polish & Testing**
+
 - End-to-end workflow testing and validation
 - Performance optimization for large video files
 - Comprehensive error handling and user feedback
 
 ### 💡 KEY SUCCESS PATTERNS ESTABLISHED
+
 - **Custom parsers** over heavy dependencies for VTT/SRT handling
 - **Zustand persist** with custom partialize logic for complex state management
 - **File metadata matching** (name + size + lastModified) for precise recovery
@@ -472,6 +517,7 @@ See `docs/reactplayer-reality-guide.md` for complete details.
 - **Docker Compose development** with environment variable passthrough for seamless full-stack setup
 
 ### 🔧 CRITICAL KNOWLEDGE FOR SUCCESS
+
 1. **Follow the localStorage persistence patterns** - They handle complex edge cases
 2. **Use the existing ReactPlayer implementation rules** - Documentation is misleading
 3. **Leverage the custom VTT/SRT parsers** - They're lightweight and robust
@@ -482,11 +528,13 @@ See `docs/reactplayer-reality-guide.md` for complete details.
 ## 🎯 CURRENT STATUS SUMMARY FOR SUCCESSORS
 
 **🟢 BACKEND: 100% COMPLETE** - AssemblyAI integration fully working
+
 - Video upload, transcription processing, job polling all tested and operational
 - Docker environment configured with API key passthrough
 - Error handling, file management, and async job tracking implemented
 
 **🟡 FRONTEND: 95% COMPLETE** - Core editing features fully working, AI UI missing
+
 - Video player, caption editing, VTT/SRT import/export, localStorage persistence all complete
 - Only missing: UI to trigger backend AI transcription (estimated 2-4 hours of work)
 
