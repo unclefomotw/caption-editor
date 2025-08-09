@@ -197,6 +197,7 @@ export const useCaptionStore = create<CaptionStore>()(
               console.log('✅ Video file matches! Restoring captions...');
               set((state) => ({
                 captionFile: storedCaptionFile,
+                captionsCleared: false, // Reset flag so restored captions can be persisted again
               }), false, 'restoreCaptions');
             } else {
               console.log('❌ Different video file detected. Clearing captions in UI only.');
