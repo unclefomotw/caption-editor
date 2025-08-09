@@ -49,11 +49,14 @@ ReactPlayer v3.3.1 uses HTML5 video events, not ReactPlayer-specific callbacks. 
     - Click-to-seek: clicking captions jumps video to timestamp
     - Smooth auto-scrolling in caption editor following video progress
     - Live caption text editing with immediate preview
-    - Auto-generated sample captions for new videos
+12. **🎉 Caption file import/export (VTT/SRT)** - COMPLETE AND TESTED
+    - Custom VTT/SRT parsers with UTF-8 BOM handling
+    - Robust time format parsing (HH:MM:SS.mmm, MM:SS.mmm, comma/dot separators)
+    - File upload UI with format validation
+    - Export functionality with proper file download
 
 ### ❌ Not Started
-- localStorage persistence for work recovery
-- Caption file import/export (VTT/SRT parsing)
+- localStorage persistence for work recovery (needs re-testing with imported captions)
 - AI transcription integration (AssemblyAI)
 - Docker configurations
 - API endpoint connections
@@ -244,6 +247,34 @@ caption-editor/
    }`}
    ```
 
+### 🚨 CRITICAL VTT/SRT Parsing Implementation Rules
+**Custom parser implementation** - No third-party libraries used for lightweight bundle:
+
+1. **Parser location**: `src/utils/caption-parsers.ts`
+2. **Key functions**:
+   - `parseVTT(content, fileName)` - Handles WebVTT format, WEBVTT header, NOTE blocks
+   - `parseSRT(content, fileName)` - Handles SubRip format with sequence numbers  
+   - `exportToVTT(captionFile)` - Generates compliant WebVTT output
+   - `exportToSRT(captionFile)` - Generates compliant SubRip output
+
+3. **Critical parsing features**:
+   - **UTF-8 BOM removal**: `content.replace(/^\uFEFF/, '')`
+   - **Multiple time formats**: HH:MM:SS.mmm, MM:SS.mmm, SS.mmm
+   - **SRT comma format**: Converts `HH:MM:SS,mmm` to `HH:MM:SS.mmm`
+   - **Multi-line caption support**: Concatenates text across lines
+
+4. **File I/O patterns**:
+   ```tsx
+   // Import: File dialog → text() → parse → setCaptionFile()
+   const file = await openFileDialog('.vtt,.srt');
+   const content = await file.text();
+   const captionData = file.name.endsWith('.vtt') ? parseVTT(content) : parseSRT(content);
+   
+   // Export: captionFile → format → download
+   const vttContent = exportToVTT(captionFile);
+   downloadFile(vttContent, 'captions.vtt', 'text/vtt');
+   ```
+
 ### FastAPI Backend Structure
 The backend is complete with working endpoints:
 - **Health**: `GET /api/health`
@@ -271,17 +302,12 @@ The backend is complete with working endpoints:
 ## Next Priority Tasks (In Order)
 
 ### 🎯 IMMEDIATE NEXT STEPS
-1. **Add localStorage persistence** - Auto-save user work
-   - Save video URL and caption data locally
-   - Restore work session on page reload
-   - Handle blob URL persistence challenges
+1. **Re-test localStorage persistence** - Verify with imported captions
+   - Test caption data persistence across page reloads  
+   - Verify imported captions restore correctly
+   - Test recovery workflow: upload video → import captions → edit → reload → re-upload video
 
-2. **Caption file import/export (VTT/SRT)**
-   - Parse VTT/SRT files into caption segments
-   - Generate VTT/SRT files from current caption data
-   - File validation and error handling
-
-3. **Connect to FastAPI backend** - Real API integration
+2. **Connect to FastAPI backend** - Real API integration
    - Upload video files to backend for processing
    - Connect frontend caption editor to backend endpoints
    - Handle async operations with proper loading states

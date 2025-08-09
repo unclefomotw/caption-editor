@@ -1,5 +1,7 @@
 import { VideoPlayer } from '@/components/VideoPlayer';
 import { CaptionEditor } from '@/components/CaptionEditor';
+import { StorageStatus } from '@/components/StorageStatus';
+import { CaptionActions } from '@/components/CaptionActions';
 
 export default function Home() {
   return (
@@ -28,28 +30,15 @@ export default function Home() {
           <div className="space-y-6">
             <VideoPlayer className="w-full" />
             
-            {/* Video Controls Panel */}
-            <div className="bg-white rounded-lg border p-4">
-              <h3 className="text-sm font-medium text-gray-700 mb-3">Quick Actions</h3>
-              <div className="flex flex-wrap gap-2">
-                <button className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-md text-sm hover:bg-blue-100 transition-colors">
-                  Generate Captions
-                </button>
-                <button className="px-3 py-1.5 bg-gray-50 text-gray-700 rounded-md text-sm hover:bg-gray-100 transition-colors">
-                  Upload Captions
-                </button>
-                <button className="px-3 py-1.5 bg-gray-50 text-gray-700 rounded-md text-sm hover:bg-gray-100 transition-colors">
-                  Export VTT
-                </button>
-                <button className="px-3 py-1.5 bg-gray-50 text-gray-700 rounded-md text-sm hover:bg-gray-100 transition-colors">
-                  Export SRT
-                </button>
-              </div>
-            </div>
+            {/* Storage Status */}
+            <StorageStatus />
+            
+            {/* Caption Actions */}
+            <CaptionActions />
           </div>
 
           {/* Caption Editor */}
-          <div>
+          <div className="space-y-6">
             <CaptionEditor className="w-full" />
           </div>
         </div>

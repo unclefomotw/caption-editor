@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import type { CaptionSegment, CaptionFile } from '../../../common-types/src/types';
+import { fileToStoredFile, storedFileToBlob, isStoredVideoValid } from '../utils/persistence';
+import type { StoredVideoFile } from '../utils/persistence';
 
 interface VideoState {
   url: string | null;
@@ -8,6 +10,8 @@ interface VideoState {
   currentTime: number;
   isPlaying: boolean;
   isReady: boolean;
+  storedFile: StoredVideoFile | null; // For persistence
+  fileName: string | null; // For display
 }
 
 interface CaptionStore {
@@ -28,6 +32,9 @@ interface CaptionStore {
   setCurrentTime: (time: number) => void;
   setIsPlaying: (playing: boolean) => void;
   setVideoReady: (ready: boolean) => void;
+  setVideoFile: (file: File) => Promise<void>;
+  restoreVideoFromStorage: () => Promise<boolean>;
+  clearVideoStorage: () => void;
   
   // Caption actions
   setCaptionFile: (file: CaptionFile) => void;
@@ -57,6 +64,8 @@ const initialVideoState: VideoState = {
   currentTime: 0,
   isPlaying: false,
   isReady: false,
+  storedFile: null,
+  fileName: null,
 };
 
 export const useCaptionStore = create<CaptionStore>()(
@@ -75,6 +84,42 @@ export const useCaptionStore = create<CaptionStore>()(
           set((state) => ({
             video: { ...state.video, url },
           }), false, 'setVideoUrl'),
+          
+        setVideoFile: async (file) => {
+          const url = URL.createObjectURL(file);
+          
+          console.log('📁 Loading video file (captions will auto-save, video must be re-uploaded after refresh)');
+          
+          // Never store video files - only caption data persists
+          // This meets the recovery spec: user re-uploads video, captions restore
+          set((state) => ({
+            video: {
+              ...state.video,
+              url,
+              fileName: file.name,
+              storedFile: null, // Never store video files
+              duration: 0,
+              currentTime: 0,
+              isPlaying: false,
+              isReady: false,
+            },
+          }), false, 'setVideoFile');
+        },
+        
+        restoreVideoFromStorage: async () => {
+          // Videos are never stored - only caption data persists
+          // This is intentional per the recovery spec: user re-uploads video, captions restore
+          console.log('ℹ️ Video files are not stored. Caption data will restore when you re-upload the video.');
+          return false;
+        },
+        
+        clearVideoStorage: () => {
+          set((state) => ({
+            video: {
+              ...initialVideoState,
+            },
+          }), false, 'clearVideoStorage');
+        },
           
         setVideoDuration: (duration) =>
           set((state) => ({
@@ -111,8 +156,10 @@ export const useCaptionStore = create<CaptionStore>()(
               captionFile: {
                 ...state.captionFile,
                 segments,
+                updatedAt: new Date().toISOString(),
               },
               isEditing: true,
+              lastSaved: new Date(),
             };
           }, false, 'addSegment'),
           
@@ -128,8 +175,10 @@ export const useCaptionStore = create<CaptionStore>()(
               captionFile: {
                 ...state.captionFile,
                 segments,
+                updatedAt: new Date().toISOString(),
               },
               isEditing: true,
+              lastSaved: new Date(),
             };
           }, false, 'updateSegment'),
           
@@ -145,9 +194,11 @@ export const useCaptionStore = create<CaptionStore>()(
               captionFile: {
                 ...state.captionFile,
                 segments,
+                updatedAt: new Date().toISOString(),
               },
               selectedSegmentId: state.selectedSegmentId === id ? null : state.selectedSegmentId,
               isEditing: true,
+              lastSaved: new Date(),
             };
           }, false, 'deleteSegment'),
           
@@ -179,8 +230,10 @@ export const useCaptionStore = create<CaptionStore>()(
               captionFile: {
                 ...state.captionFile,
                 segments,
+                updatedAt: new Date().toISOString(),
               },
               isEditing: true,
+              lastSaved: new Date(),
             };
           }, false, 'splitSegment'),
           
@@ -215,9 +268,11 @@ export const useCaptionStore = create<CaptionStore>()(
               captionFile: {
                 ...state.captionFile,
                 segments,
+                updatedAt: new Date().toISOString(),
               },
               selectedSegmentId: mergedSegment.id,
               isEditing: true,
+              lastSaved: new Date(),
             };
           }, false, 'mergeSegments'),
         
@@ -278,7 +333,10 @@ export const useCaptionStore = create<CaptionStore>()(
         partialize: (state) => ({
           captionFile: state.captionFile,
           lastSaved: state.lastSaved,
+          // Only persist caption data - no video storage per recovery spec
+          // User re-uploads video, captions restore automatically
         }),
+        version: 1, // Add versioning for future migrations
       }
     ),
     {

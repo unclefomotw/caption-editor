@@ -23,12 +23,12 @@ export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
     setIsPlaying,
     setVideoReady,
     selectSegmentByTime,
-    setCaptionFile,
-    captionFile,
+    setVideoFile,
+    restoreVideoFromStorage,
   } = useCaptionStore();
 
-  // Handle file upload
-  const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle file upload with persistence
+  const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     console.log('🔥 FILE UPLOAD HANDLER CALLED!');
     console.log('Files count:', event.target.files?.length || 0);
 
@@ -52,21 +52,13 @@ export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
       return;
     }
 
-    // Create blob URL and update state
-    const url = URL.createObjectURL(file);
-    console.log('🔗 Created blob URL:', url);
-
-    console.log('🔄 Updating Zustand state...');
-    setVideoUrl(url);
-    setVideoDuration(0);
-    setCurrentTime(0);
-    setVideoReady(false);
-    setIsPlaying(false);
-
-    console.log('✅ State updated! Calling onVideoLoad...');
-    onVideoLoad?.(url);
+    console.log('📁 Loading video file. Caption edits will auto-save.');
+    await setVideoFile(file);
+    
+    console.log('✅ Video file stored! Calling onVideoLoad...');
+    onVideoLoad?.(video.url || '');
     console.log('🎬 File upload process complete!');
-  }, [setVideoUrl, setVideoDuration, setCurrentTime, setVideoReady, setIsPlaying, onVideoLoad]);
+  }, [setVideoFile, onVideoLoad, video.url]);
 
 
   // Handle time updates (HTML5 video event)
@@ -89,52 +81,23 @@ export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
       setVideoReady(true);
       console.log('✅ Duration set successfully:', duration);
       
-      // Auto-generate sample caption file if none exists
-      if (!captionFile) {
-        const sampleCaptionFile = {
-          id: `caption_${Date.now()}`,
-          title: 'Auto-generated Captions',
-          language: 'en',
-          format: 'vtt' as const,
-          segments: [
-            {
-              id: 'sample_1',
-              startTime: 0,
-              endTime: 3,
-              text: 'Welcome to the video! This is the first caption segment.',
-              confidence: 0.95,
-            },
-            {
-              id: 'sample_2', 
-              startTime: 3,
-              endTime: 7,
-              text: 'You can click on any caption to jump to that part of the video.',
-              confidence: 0.92,
-            },
-            {
-              id: 'sample_3',
-              startTime: 7,
-              endTime: 12,
-              text: 'Try editing the text by clicking the edit button next to each segment.',
-              confidence: 0.88,
-            },
-            {
-              id: 'sample_4',
-              startTime: 12,
-              endTime: Math.min(duration, 18),
-              text: 'The captions will highlight automatically as the video plays.',
-              confidence: 0.90,
-            },
-          ].filter(segment => segment.endTime <= duration), // Only include segments within video duration
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-        
-        console.log('🎬 Auto-generating sample caption file with', sampleCaptionFile.segments.length, 'segments');
-        setCaptionFile(sampleCaptionFile);
-      }
+      // Sample caption auto-generation removed - bidirectional sync is tested and working
+      // Users will import caption files or use AI generation instead
+      console.log('✅ Video ready for caption editing');
     }
   }, [setVideoDuration, setVideoReady]);
+
+  // Auto-restore video from storage on component mount
+  useEffect(() => {
+    const restoreVideo = async () => {
+      const restored = await restoreVideoFromStorage();
+      if (restored) {
+        console.log('✅ Video restored from localStorage');
+      }
+    };
+    
+    restoreVideo();
+  }, [restoreVideoFromStorage]);
 
   // Add debugging effect to see what's happening with video element
   useEffect(() => {
@@ -264,9 +227,14 @@ export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
             <h3 className="text-lg font-semibold text-white mb-2">
               Upload a video to get started
             </h3>
-            <p className="text-gray-400 mb-6">
+            <p className="text-gray-400 mb-2">
               Supports .mp4, .mov, and .m4v files
             </p>
+            {video.storedFile && (
+              <p className="text-blue-400 text-sm mb-4">
+                💾 Previously loaded: {video.fileName}
+              </p>
+            )}
             <label htmlFor="video-upload">
               <Button asChild className="cursor-pointer">
                 <span>Choose Video File</span>
