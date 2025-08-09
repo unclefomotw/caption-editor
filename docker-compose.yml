@@ -28,3 +28,4 @@ services:
       - /app/.venv
     environment:
       - PYTHONPATH=/app/src
+      - ASSEMBLYAI_API_KEY=${ASSEMBLYAI_API_KEY}

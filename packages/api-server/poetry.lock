@@ -35,19 +35,19 @@ trio = ["trio (<0.22)"]
 
 [[package]]
 name = "assemblyai"
-version = "0.17.0"
+version = "0.42.1"
 description = "AssemblyAI Python SDK"
 optional = false
 python-versions = ">=3.8"
 groups = ["main"]
 files = [
-    {file = "assemblyai-0.17.0-py3-none-any.whl", hash = "sha256:3bad8cc7545b5b831f243f1b2f01bc4cc0e8aad78babf44c8008f2293c540e36"},
-    {file = "assemblyai-0.17.0.tar.gz", hash = "sha256:6d5bbfbbaa626ed021c3d3dec0ca52b3ebf6e6ef277ac76a7a6aed52182d531e"},
+    {file = "assemblyai-0.42.1-py3-none-any.whl", hash = "sha256:822f1db7ba95bfcde8736e19f91e8857024514d343306a39a66d410b2573ba9f"},
+    {file = "assemblyai-0.42.1.tar.gz", hash = "sha256:be6a6803e3c3095f60c668de6bef1d46e2ecf0f63573cc058d0224fb3c27b3a2"},
 ]
 
 [package.dependencies]
 httpx = ">=0.19.0"
-pydantic = ">=1.7.0,<1.10.7 || >1.10.7"
+pydantic = ">=1.10.17"
 typing-extensions = ">=3.7"
 websockets = ">=11.0"
 
@@ -1002,4 +1002,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.11"
-content-hash = "fd7f93883186e94a05fd8ab399b059a478530f0506155a6b196936d52239ae4b"
+content-hash = "1fb0d41f5cb15cde5c463d33e59cd74fd50154246e062798f450a9697fc22ddf"

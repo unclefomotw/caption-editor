@@ -2,6 +2,19 @@
 
 This project supports both **Turborepo** and **Docker Compose** development approaches.
 
+## Prerequisites
+
+**AssemblyAI API Key**: Required for video transcription functionality.
+```bash
+# Export your API key in your shell
+export ASSEMBLYAI_API_KEY="your-actual-api-key-here"
+
+# Verify it's set
+echo $ASSEMBLYAI_API_KEY
+```
+
+Get your API key from: https://www.assemblyai.com/dashboard/signup
+
 ## Quick Start Options
 
 ### Option 1: Docker Compose (Full Stack)
