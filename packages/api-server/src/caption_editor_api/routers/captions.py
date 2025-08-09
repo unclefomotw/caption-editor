@@ -1,6 +1,8 @@
 """Caption processing router."""
 
 from typing import List, Optional
+import tempfile
+import os
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from pydantic import BaseModel
 
@@ -27,6 +29,7 @@ class CaptionFile(BaseModel):
 class TranscriptionRequest(BaseModel):
     """Request model for AI transcription."""
     
+    video_id: Optional[str] = None
     video_url: Optional[str] = None
     language: Optional[str] = "en"
 
@@ -38,6 +41,52 @@ class TranscriptionResponse(BaseModel):
     job_id: Optional[str] = None
     captions: Optional[CaptionFile] = None
     message: str
+
+
+class VideoUploadResponse(BaseModel):
+    """Response model for video upload."""
+    
+    video_id: str
+    filename: str
+    size: int
+    duration: Optional[float] = None
+    message: str
+
+
+@router.post("/videos/upload", response_model=VideoUploadResponse)
+async def upload_video(file: UploadFile = File(...)):
+    """Upload a video file for processing."""
+    # Validate file extension
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="No filename provided")
+    
+    # Check supported video formats
+    supported_extensions = ['.mp4', '.mov', '.m4v']
+    file_ext = os.path.splitext(file.filename)[1].lower()
+    if file_ext not in supported_extensions:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported video format. Supported formats: {', '.join(supported_extensions)}"
+        )
+    
+    # Create temporary file to store the video
+    with tempfile.NamedTemporaryFile(delete=False, suffix=file_ext) as temp_file:
+        # Read and write file content
+        content = await file.read()
+        temp_file.write(content)
+        temp_file_path = temp_file.name
+    
+    # Generate video ID (using filename + temp path for uniqueness)
+    video_id = f"video_{os.path.basename(temp_file_path)}"
+    
+    # TODO: Extract video metadata (duration, etc.) using ffprobe or similar
+    # For now, return basic file info
+    return VideoUploadResponse(
+        video_id=video_id,
+        filename=file.filename,
+        size=len(content),
+        message=f"Video '{file.filename}' uploaded successfully. Ready for transcription."
+    )
 
 
 @router.post("/captions/upload", response_model=CaptionFile)
@@ -66,17 +115,21 @@ async def upload_caption_file(file: UploadFile = File(...)):
 @router.post("/captions/transcribe", response_model=TranscriptionResponse)
 async def transcribe_video(request: TranscriptionRequest):
     """Start AI transcription of a video."""
-    if not request.video_url:
+    if not request.video_id and not request.video_url:
         raise HTTPException(
             status_code=400,
-            detail="Video URL is required"
+            detail="Either video_id (for uploaded video) or video_url is required"
         )
     
     # TODO: Implement AssemblyAI integration
-    # This is a placeholder response
+    # For uploaded videos (video_id), we'll use the temporary file path
+    # For video URLs, we'll pass the URL directly to AssemblyAI
+    
+    video_source = request.video_id if request.video_id else request.video_url
+    
     return TranscriptionResponse(
         status="processing",
-        job_id="mock-job-123",
+        job_id=f"job_{video_source}_{os.urandom(4).hex()}",
         message="Transcription started successfully"
     )
 

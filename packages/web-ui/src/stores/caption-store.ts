@@ -5,6 +5,7 @@ import type {
   CaptionSegment,
 } from '../../../common-types/src/types';
 import type { StoredVideoFile } from '../utils/persistence';
+import { apiClient } from '../utils/api-client';
 
 interface VideoFileMetadata {
   name: string;
@@ -38,6 +39,14 @@ interface CaptionStore {
   // Recovery control
   captionsCleared: boolean; // Track if captions were cleared on startup
 
+  // API state
+  transcription: {
+    jobId: string | null;
+    status: 'idle' | 'uploading' | 'processing' | 'completed' | 'error';
+    error: string | null;
+  };
+  uploadedVideoId: string | null;
+
   // Video actions
   setVideoUrl: (url: string) => void;
   setVideoDuration: (duration: number) => void;
@@ -64,6 +73,12 @@ interface CaptionStore {
   // Edit actions
   setIsEditing: (editing: boolean) => void;
   markSaved: () => void;
+
+  // API actions
+  uploadVideoToBackend: (file: File) => Promise<void>;
+  startTranscription: (videoId?: string, videoUrl?: string) => Promise<void>;
+  checkTranscriptionStatus: () => Promise<void>;
+  clearTranscriptionState: () => void;
 
   // Utility actions
   reset: () => void;
@@ -97,6 +112,14 @@ export const useCaptionStore = create<CaptionStore>()(
         isEditing: false,
         lastSaved: null,
         captionsCleared: false,
+        
+        // API state
+        transcription: {
+          jobId: null,
+          status: 'idle',
+          error: null,
+        },
+        uploadedVideoId: null,
 
         // Video actions
         setVideoUrl: (url) =>
@@ -559,6 +582,193 @@ export const useCaptionStore = create<CaptionStore>()(
               'clearCaptionsOnStartup'
             );
           }
+        },
+
+        // API actions
+        uploadVideoToBackend: async (file: File) => {
+          try {
+            set(
+              (state) => ({
+                transcription: {
+                  ...state.transcription,
+                  status: 'uploading',
+                  error: null,
+                },
+              }),
+              false,
+              'uploadVideoToBackend:start'
+            );
+
+            const response = await apiClient.uploadVideo(file);
+            console.log('✅ Video uploaded to backend:', response);
+
+            set(
+              (state) => ({
+                uploadedVideoId: response.video_id,
+                transcription: {
+                  ...state.transcription,
+                  status: 'idle',
+                },
+              }),
+              false,
+              'uploadVideoToBackend:success'
+            );
+          } catch (error) {
+            console.error('❌ Failed to upload video:', error);
+            set(
+              (state) => ({
+                transcription: {
+                  ...state.transcription,
+                  status: 'error',
+                  error: error instanceof Error ? error.message : 'Upload failed',
+                },
+              }),
+              false,
+              'uploadVideoToBackend:error'
+            );
+          }
+        },
+
+        startTranscription: async (videoId?: string, videoUrl?: string) => {
+          try {
+            const state = get();
+            const requestVideoId = videoId || state.uploadedVideoId;
+
+            if (!requestVideoId && !videoUrl) {
+              throw new Error('No video ID or URL provided for transcription');
+            }
+
+            set(
+              (state) => ({
+                transcription: {
+                  ...state.transcription,
+                  status: 'processing',
+                  error: null,
+                },
+              }),
+              false,
+              'startTranscription:start'
+            );
+
+            const response = await apiClient.startTranscription({
+              video_id: requestVideoId || undefined,
+              video_url: videoUrl,
+              language: 'en',
+            });
+
+            console.log('✅ Transcription started:', response);
+
+            set(
+              (state) => ({
+                transcription: {
+                  ...state.transcription,
+                  jobId: response.job_id || null,
+                },
+              }),
+              false,
+              'startTranscription:success'
+            );
+          } catch (error) {
+            console.error('❌ Failed to start transcription:', error);
+            set(
+              (state) => ({
+                transcription: {
+                  ...state.transcription,
+                  status: 'error',
+                  error: error instanceof Error ? error.message : 'Transcription failed',
+                },
+              }),
+              false,
+              'startTranscription:error'
+            );
+          }
+        },
+
+        checkTranscriptionStatus: async () => {
+          try {
+            const state = get();
+            if (!state.transcription.jobId) {
+              throw new Error('No transcription job ID available');
+            }
+
+            const response = await apiClient.getTranscriptionResult(state.transcription.jobId);
+            console.log('🔍 Transcription status:', response);
+
+            if (response.status === 'completed' && response.captions) {
+              // Convert API response to CaptionFile format
+              const captionFile: CaptionFile = {
+                segments: response.captions.segments.map((seg: any) => ({
+                  id: seg.id,
+                  startTime: seg.start_time,
+                  endTime: seg.end_time,
+                  text: seg.text,
+                  confidence: 1.0, // API might not provide this
+                })),
+                language: 'en',
+                format: 'vtt',
+                metadata: {
+                  title: `AI Transcription - ${new Date().toLocaleDateString()}`,
+                  createdAt: new Date().toISOString(),
+                  modifiedAt: new Date().toISOString(),
+                },
+              };
+
+              set(
+                {
+                  captionFile,
+                  captionsCleared: false,
+                  transcription: {
+                    jobId: null,
+                    status: 'completed',
+                    error: null,
+                  },
+                },
+                false,
+                'checkTranscriptionStatus:completed'
+              );
+            } else if (response.status === 'error') {
+              set(
+                (state) => ({
+                  transcription: {
+                    ...state.transcription,
+                    status: 'error',
+                    error: response.message || 'Transcription failed',
+                  },
+                }),
+                false,
+                'checkTranscriptionStatus:error'
+              );
+            }
+            // If still processing, keep checking
+          } catch (error) {
+            console.error('❌ Failed to check transcription status:', error);
+            set(
+              (state) => ({
+                transcription: {
+                  ...state.transcription,
+                  status: 'error',
+                  error: error instanceof Error ? error.message : 'Status check failed',
+                },
+              }),
+              false,
+              'checkTranscriptionStatus:error'
+            );
+          }
+        },
+
+        clearTranscriptionState: () => {
+          set(
+            {
+              transcription: {
+                jobId: null,
+                status: 'idle',
+                error: null,
+              },
+              uploadedVideoId: null,
+            },
+            false,
+            'clearTranscriptionState'
+          );
         },
       }),
       {

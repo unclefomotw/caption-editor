@@ -69,7 +69,7 @@ export function CaptionActions() {
     setIsExporting(true);
     try {
       const vttContent = exportToVTT(captionFile);
-      const fileName = `${captionFile.title.replace(/\\s+/g, '_')}.vtt`;
+      const fileName = `${(captionFile.metadata?.title || 'captions').replace(/\s+/g, '_')}.vtt`;
       downloadFile(vttContent, fileName, 'text/vtt');
       console.log('✅ Exported VTT file:', fileName);
     } catch (error) {
@@ -90,7 +90,7 @@ export function CaptionActions() {
     setIsExporting(true);
     try {
       const srtContent = exportToSRT(captionFile);
-      const fileName = `${captionFile.title.replace(/\\s+/g, '_')}.srt`;
+      const fileName = `${(captionFile.metadata?.title || 'captions').replace(/\s+/g, '_')}.srt`;
       downloadFile(srtContent, fileName, 'text/srt');
       console.log('✅ Exported SRT file:', fileName);
     } catch (error) {
