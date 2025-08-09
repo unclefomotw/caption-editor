@@ -296,15 +296,6 @@ export const useCaptionStore = create<CaptionStore>()(
 
         // Caption actions
         setCaptionFile: (captionFile) => {
-          console.log(
-            '📝 setCaptionFile called with:',
-            captionFile ? 'CaptionFile object' : 'null'
-          );
-          console.log(
-            '📝 Current captionsCleared flag:',
-            get().captionsCleared
-          );
-
           set(
             {
               captionFile,
@@ -313,8 +304,6 @@ export const useCaptionStore = create<CaptionStore>()(
             false,
             'setCaptionFile'
           );
-
-          console.log('📝 Caption file set, persistence should now work');
         },
 
         addSegment: (segment) =>
@@ -561,11 +550,11 @@ export const useCaptionStore = create<CaptionStore>()(
 
             // Use skipPersist: true to prevent this clearing from being saved to localStorage
             set(
-              (state) => ({
+              {
                 captionFile: null,
                 selectedSegmentId: null,
                 captionsCleared: true,
-              }),
+              },
               false,
               'clearCaptionsOnStartup'
             );
@@ -575,17 +564,8 @@ export const useCaptionStore = create<CaptionStore>()(
       {
         name: 'caption-editor-store',
         partialize: (state) => {
-          console.log('🔧 partialize called with state:', {
-            hasCaptionFile: !!state.captionFile,
-            captionsCleared: state.captionsCleared,
-            videoMetadata: !!state.video.fileMetadata,
-          });
-
           // Special case: If captions were cleared on startup, preserve existing localStorage data
           if (state.captionsCleared && state.captionFile === null) {
-            console.log(
-              '🔧 Startup clearing detected, checking existing data...'
-            );
             // Get the current localStorage data to preserve captionFile
             const existingData = localStorage.getItem('caption-editor-store');
             if (existingData) {
@@ -603,7 +583,6 @@ export const useCaptionStore = create<CaptionStore>()(
                     videoFileMetadata: existingVideoMetadata, // Preserve the existing video metadata too!
                     captionFile: existingCaptionFile, // Preserve the existing data
                   };
-                  console.log('🔧 Returning preserved state:', preserved);
                   return preserved;
                 }
               } catch (error) {
@@ -618,7 +597,6 @@ export const useCaptionStore = create<CaptionStore>()(
           // Normal persistence logic
           const shouldPersistCaptions =
             state.captionFile !== null && !state.captionsCleared;
-          console.log('🔧 shouldPersistCaptions:', shouldPersistCaptions);
 
           const persistedState: any = {
             lastSaved: state.lastSaved,
@@ -628,15 +606,8 @@ export const useCaptionStore = create<CaptionStore>()(
           // Only add captionFile to persisted state if we should persist it
           if (shouldPersistCaptions) {
             persistedState.captionFile = state.captionFile;
-            console.log(
-              '🔧 Adding captionFile to persisted state, segments:',
-              state.captionFile?.segments?.length || 0
-            );
-          } else {
-            console.log('🔧 NOT persisting captionFile');
           }
 
-          console.log('🔧 Final persisted state:', persistedState);
           return persistedState;
         },
         version: 1, // Add versioning for future migrations
