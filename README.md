@@ -120,10 +120,8 @@ All commands should be run from the project root.
   npm run generate-types
   ```
 
-## License
+## License and Attribution
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.
+This project is licensed under the [MIT License](LICENSE). You are free to use, modify, and distribute this project, subject to the terms of the license.
 
-### Attribution
-
-This project is licensed under the MIT License. We're happy for you to use it in your own projects. While not required, we'd appreciate it if you would include a link back to this repository or a mention of the "Caption Editor" project in your application's acknowledgments or about page. Thank you!
+While not required, attribution is appreciated. Please consider referencing the original project by linking to this repository https://github.com/unclefomotw/caption-editor in your documentation or README.
