@@ -4,15 +4,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { useCaptionStore } from '@/stores/caption-store';
 import type { CaptionSegment } from '../../../common-types/src/types';
 import { Button } from '@/components/ui/button';
-import { 
-  Plus, 
-  Trash2, 
-  Scissors, 
-  Combine,
-  Edit3,
-  Save,
-  X,
-} from 'lucide-react';
+import { Plus, Trash2, Scissors, Combine, Edit3, Save, X } from 'lucide-react';
 
 interface CaptionEditorProps {
   className?: string;
@@ -49,37 +41,47 @@ export function CaptionEditor({ className }: CaptionEditorProps) {
   };
 
   // Handle segment click - seek video to segment start
-  const handleSegmentClick = useCallback((segment: CaptionSegment) => {
-    selectSegment(segment.id);
-    setCurrentTime(segment.startTime);
-    
-    // Also seek the video element directly
-    const videoElement = document.querySelector('video');
-    if (videoElement) {
-      videoElement.currentTime = segment.startTime;
-    }
-    
-    setIsPlaying(true);
-  }, [selectSegment, setCurrentTime, setIsPlaying]);
-  
+  const handleSegmentClick = useCallback(
+    (segment: CaptionSegment) => {
+      selectSegment(segment.id);
+      setCurrentTime(segment.startTime);
+
+      // Also seek the video element directly
+      const videoElement = document.querySelector('video');
+      if (videoElement) {
+        videoElement.currentTime = segment.startTime;
+      }
+
+      setIsPlaying(true);
+    },
+    [selectSegment, setCurrentTime, setIsPlaying]
+  );
+
   // Auto-scroll to selected segment
   useEffect(() => {
-    if (selectedSegmentId && selectedSegmentRef.current && segmentListRef.current) {
+    if (
+      selectedSegmentId &&
+      selectedSegmentRef.current &&
+      segmentListRef.current
+    ) {
       const segmentElement = selectedSegmentRef.current;
       const listElement = segmentListRef.current;
-      
+
       const segmentTop = segmentElement.offsetTop;
       const segmentHeight = segmentElement.offsetHeight;
       const listScrollTop = listElement.scrollTop;
       const listHeight = listElement.clientHeight;
-      
+
       // Check if segment is outside the visible area
-      if (segmentTop < listScrollTop || segmentTop + segmentHeight > listScrollTop + listHeight) {
+      if (
+        segmentTop < listScrollTop ||
+        segmentTop + segmentHeight > listScrollTop + listHeight
+      ) {
         // Scroll to center the segment in the visible area
         const targetScrollTop = segmentTop - listHeight / 2 + segmentHeight / 2;
         listElement.scrollTo({
           top: Math.max(0, targetScrollTop),
-          behavior: 'smooth'
+          behavior: 'smooth',
         });
       }
     }
@@ -119,19 +121,25 @@ export function CaptionEditor({ className }: CaptionEditorProps) {
   }, [video.currentTime, addSegment, selectSegment]);
 
   // Handle split segment at current time
-  const handleSplitSegment = useCallback((segmentId: string) => {
-    splitSegment(segmentId, video.currentTime);
-  }, [video.currentTime, splitSegment]);
+  const handleSplitSegment = useCallback(
+    (segmentId: string) => {
+      splitSegment(segmentId, video.currentTime);
+    },
+    [video.currentTime, splitSegment]
+  );
 
   // Handle merge with next segment
-  const handleMergeSegment = useCallback((segment: CaptionSegment, segments: CaptionSegment[]) => {
-    const currentIndex = segments.findIndex(s => s.id === segment.id);
-    const nextSegment = segments[currentIndex + 1];
-    
-    if (nextSegment) {
-      mergeSegments(segment.id, nextSegment.id);
-    }
-  }, [mergeSegments]);
+  const handleMergeSegment = useCallback(
+    (segment: CaptionSegment, segments: CaptionSegment[]) => {
+      const currentIndex = segments.findIndex((s) => s.id === segment.id);
+      const nextSegment = segments[currentIndex + 1];
+
+      if (nextSegment) {
+        mergeSegments(segment.id, nextSegment.id);
+      }
+    },
+    [mergeSegments]
+  );
 
   if (!captionFile) {
     return (
@@ -144,7 +152,7 @@ export function CaptionEditor({ className }: CaptionEditorProps) {
           <p className="text-gray-500 mb-4">
             Upload a video and generate captions to start editing
           </p>
-          <Button 
+          <Button
             onClick={handleAddSegment}
             disabled={!video.isReady}
             className="mt-2"
@@ -157,7 +165,9 @@ export function CaptionEditor({ className }: CaptionEditorProps) {
     );
   }
 
-  const segments = captionFile.segments.sort((a, b) => a.startTime - b.startTime);
+  const segments = captionFile.segments.sort(
+    (a, b) => a.startTime - b.startTime
+  );
 
   return (
     <div className={`bg-white rounded-lg border ${className}`}>
@@ -167,15 +177,12 @@ export function CaptionEditor({ className }: CaptionEditorProps) {
           <div>
             <h2 className="text-lg font-semibold">Caption Editor</h2>
             <p className="text-sm text-gray-600">
-              {segments.length} segments • {captionFile.language} • {captionFile.format?.toUpperCase()}
+              {segments.length} segments • {captionFile.language} •{' '}
+              {captionFile.format?.toUpperCase()}
             </p>
           </div>
           <div className="flex space-x-2">
-            <Button 
-              onClick={handleAddSegment}
-              size="sm"
-              variant="outline"
-            >
+            <Button onClick={handleAddSegment} size="sm" variant="outline">
               <Plus className="w-4 h-4 mr-2" />
               Add Segment
             </Button>
@@ -189,11 +196,7 @@ export function CaptionEditor({ className }: CaptionEditorProps) {
           <div className="p-8 text-center text-gray-500">
             <div className="text-4xl mb-4">✨</div>
             <p>No caption segments yet.</p>
-            <Button 
-              onClick={handleAddSegment}
-              size="sm"
-              className="mt-3"
-            >
+            <Button onClick={handleAddSegment} size="sm" className="mt-3">
               <Plus className="w-4 h-4 mr-2" />
               Add First Segment
             </Button>
@@ -203,14 +206,14 @@ export function CaptionEditor({ className }: CaptionEditorProps) {
             {segments.map((segment, index) => {
               const isSelected = segment.id === selectedSegmentId;
               const isEditing = segment.id === editingSegmentId;
-              
+
               return (
                 <div
                   key={segment.id}
                   ref={isSelected ? selectedSegmentRef : null}
                   className={`p-4 transition-all duration-200 cursor-pointer ${
-                    isSelected 
-                      ? 'bg-blue-100 border-l-4 border-blue-500 shadow-sm transform translate-x-1' 
+                    isSelected
+                      ? 'bg-blue-100 border-l-4 border-blue-500 shadow-sm transform translate-x-1'
                       : 'hover:bg-gray-50 hover:translate-x-0.5'
                   }`}
                   onClick={() => !isEditing && handleSegmentClick(segment)}
@@ -220,17 +223,25 @@ export function CaptionEditor({ className }: CaptionEditorProps) {
                     <div className="flex-1 mr-4">
                       <div className="flex items-center space-x-2 text-sm text-gray-600 mb-2">
                         <span className="font-mono">
-                          {formatTime(segment.startTime)} → {formatTime(segment.endTime)}
+                          {formatTime(segment.startTime)} →{' '}
+                          {formatTime(segment.endTime)}
                         </span>
                         <span className="text-gray-400">•</span>
-                        <span>{((segment.endTime - segment.startTime)).toFixed(1)}s</span>
+                        <span>
+                          {(segment.endTime - segment.startTime).toFixed(1)}s
+                        </span>
                         {segment.confidence && (
                           <>
                             <span className="text-gray-400">•</span>
-                            <span className={
-                              segment.confidence > 0.8 ? 'text-green-600' :
-                              segment.confidence > 0.6 ? 'text-yellow-600' : 'text-red-600'
-                            }>
+                            <span
+                              className={
+                                segment.confidence > 0.8
+                                  ? 'text-green-600'
+                                  : segment.confidence > 0.6
+                                    ? 'text-yellow-600'
+                                    : 'text-red-600'
+                              }
+                            >
                               {Math.round(segment.confidence * 100)}%
                             </span>
                           </>
@@ -238,11 +249,13 @@ export function CaptionEditor({ className }: CaptionEditorProps) {
                         {segment.speaker && (
                           <>
                             <span className="text-gray-400">•</span>
-                            <span className="text-purple-600">{segment.speaker}</span>
+                            <span className="text-purple-600">
+                              {segment.speaker}
+                            </span>
                           </>
                         )}
                       </div>
-                      
+
                       {/* Text Content */}
                       {isEditing ? (
                         <div className="space-y-2">
@@ -265,7 +278,11 @@ export function CaptionEditor({ className }: CaptionEditorProps) {
                               <Save className="w-3 h-3 mr-1" />
                               Save
                             </Button>
-                            <Button size="sm" variant="outline" onClick={handleCancelEdit}>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={handleCancelEdit}
+                            >
                               <X className="w-3 h-3 mr-1" />
                               Cancel
                             </Button>
@@ -273,7 +290,9 @@ export function CaptionEditor({ className }: CaptionEditorProps) {
                         </div>
                       ) : (
                         <p className="text-gray-900 leading-relaxed">
-                          {segment.text || <em className="text-gray-400">Empty caption</em>}
+                          {segment.text || (
+                            <em className="text-gray-400">Empty caption</em>
+                          )}
                         </p>
                       )}
                     </div>
@@ -291,7 +310,7 @@ export function CaptionEditor({ className }: CaptionEditorProps) {
                         >
                           <Edit3 className="w-3 h-3" />
                         </Button>
-                        
+
                         <Button
                           size="sm"
                           variant="ghost"
@@ -299,11 +318,14 @@ export function CaptionEditor({ className }: CaptionEditorProps) {
                             e.stopPropagation();
                             handleSplitSegment(segment.id);
                           }}
-                          disabled={video.currentTime <= segment.startTime || video.currentTime >= segment.endTime}
+                          disabled={
+                            video.currentTime <= segment.startTime ||
+                            video.currentTime >= segment.endTime
+                          }
                         >
                           <Scissors className="w-3 h-3" />
                         </Button>
-                        
+
                         {index < segments.length - 1 && (
                           <Button
                             size="sm"
@@ -316,7 +338,7 @@ export function CaptionEditor({ className }: CaptionEditorProps) {
                             <Combine className="w-3 h-3" />
                           </Button>
                         )}
-                        
+
                         <Button
                           size="sm"
                           variant="ghost"
@@ -337,7 +359,7 @@ export function CaptionEditor({ className }: CaptionEditorProps) {
           </div>
         )}
       </div>
-      
+
       {/* Footer */}
       {isEditing && (
         <div className="p-4 border-t bg-yellow-50">

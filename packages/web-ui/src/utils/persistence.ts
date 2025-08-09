@@ -20,10 +20,12 @@ interface StoredVideoState {
 /**
  * Convert a File object to a storable format with base64 data
  */
-export const fileToStoredFile = async (file: File): Promise<StoredVideoFile> => {
+export const fileToStoredFile = async (
+  file: File
+): Promise<StoredVideoFile> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    
+
     reader.onload = () => {
       const base64Data = reader.result as string;
       resolve({
@@ -34,7 +36,7 @@ export const fileToStoredFile = async (file: File): Promise<StoredVideoFile> => 
         data: base64Data,
       });
     };
-    
+
     reader.onerror = () => reject(reader.error);
     reader.readAsDataURL(file);
   });
@@ -43,55 +45,64 @@ export const fileToStoredFile = async (file: File): Promise<StoredVideoFile> => 
 /**
  * Convert stored file data back to a File object and create blob URL
  */
-export const storedFileToBlob = (storedFile: StoredVideoFile): { file: File; url: string } => {
+export const storedFileToBlob = (
+  storedFile: StoredVideoFile
+): { file: File; url: string } => {
   // Convert base64 back to blob
   const base64Data = storedFile.data.split(',')[1];
   const byteCharacters = atob(base64Data);
   const byteNumbers = new Array(byteCharacters.length);
-  
+
   for (let i = 0; i < byteCharacters.length; i++) {
     byteNumbers[i] = byteCharacters.charCodeAt(i);
   }
-  
+
   const byteArray = new Uint8Array(byteNumbers);
   const blob = new Blob([byteArray], { type: storedFile.type });
-  
+
   // Create new File object
   const file = new File([blob], storedFile.name, {
     type: storedFile.type,
     lastModified: storedFile.lastModified,
   });
-  
+
   // Create blob URL
   const url = URL.createObjectURL(blob);
-  
+
   return { file, url };
 };
 
 /**
  * Check if stored video data is still valid (not too old, reasonable size)
  */
-export const isStoredVideoValid = (storedVideo: StoredVideoState | null): boolean => {
+export const isStoredVideoValid = (
+  storedVideo: StoredVideoState | null
+): boolean => {
   if (!storedVideo || !storedVideo.file) return false;
-  
+
   // Check age (don't restore files older than 7 days)
   const maxAge = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
   const fileAge = Date.now() - storedVideo.file.lastModified;
   if (fileAge > maxAge) return false;
-  
+
   // Check size (don't restore files larger than 500MB to avoid localStorage issues)
   const maxSize = 500 * 1024 * 1024; // 500MB
   if (storedVideo.file.size > maxSize) return false;
-  
+
   return true;
 };
 
 /**
  * Calculate storage size in MB for display
  */
-export const getStorageSizeInMB = (storedVideo: StoredVideoState | null): number => {
+export const getStorageSizeInMB = (
+  storedVideo: StoredVideoState | null
+): number => {
   if (!storedVideo || !storedVideo.file) return 0;
-  return Math.round((storedVideo.file.data.length * 0.75) / 1024 / 1024 * 100) / 100; // base64 overhead ~25%
+  return (
+    Math.round(((storedVideo.file.data.length * 0.75) / 1024 / 1024) * 100) /
+    100
+  ); // base64 overhead ~25%
 };
 
 /**

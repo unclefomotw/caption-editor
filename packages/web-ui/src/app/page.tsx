@@ -9,7 +9,7 @@ import { useCaptionStore } from '@/stores/caption-store';
 
 export default function Home() {
   const { clearCaptionsOnStartup } = useCaptionStore();
-  
+
   // Clear captions on app startup per recovery spec
   useEffect(() => {
     clearCaptionsOnStartup();
@@ -21,14 +21,14 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Caption Editor</h1>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Caption Editor
+              </h1>
               <p className="text-sm text-gray-600">
                 Upload a video and edit captions with AI assistance
               </p>
             </div>
-            <div className="text-sm text-gray-500">
-              v0.1.0
-            </div>
+            <div className="text-sm text-gray-500">v0.1.0</div>
           </div>
         </div>
       </header>
@@ -39,10 +39,10 @@ export default function Home() {
           {/* Video Player */}
           <div className="space-y-6">
             <VideoPlayer className="w-full" />
-            
+
             {/* Storage Status */}
             <StorageStatus />
-            
+
             {/* Caption Actions */}
             <CaptionActions />
           </div>

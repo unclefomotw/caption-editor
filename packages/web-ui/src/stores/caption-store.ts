@@ -1,7 +1,14 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
-import type { CaptionSegment, CaptionFile } from '../../../common-types/src/types';
-import { fileToStoredFile, storedFileToBlob, isStoredVideoValid } from '../utils/persistence';
+import type {
+  CaptionSegment,
+  CaptionFile,
+} from '../../../common-types/src/types';
+import {
+  fileToStoredFile,
+  storedFileToBlob,
+  isStoredVideoValid,
+} from '../utils/persistence';
 import type { StoredVideoFile } from '../utils/persistence';
 
 interface VideoFileMetadata {
@@ -24,18 +31,18 @@ interface VideoState {
 interface CaptionStore {
   // Video state
   video: VideoState;
-  
+
   // Caption data
   captionFile: CaptionFile | null;
   selectedSegmentId: string | null;
-  
+
   // UI state
   isEditing: boolean;
   lastSaved: Date | null;
-  
+
   // Recovery control
   captionsCleared: boolean; // Track if captions were cleared on startup
-  
+
   // Video actions
   setVideoUrl: (url: string) => void;
   setVideoDuration: (duration: number) => void;
@@ -46,7 +53,7 @@ interface CaptionStore {
   restoreVideoFromStorage: () => Promise<boolean>;
   clearVideoStorage: () => void;
   checkAndRestoreCaptions: (file: File) => void;
-  
+
   // Caption actions
   setCaptionFile: (file: CaptionFile) => void;
   addSegment: (segment: CaptionSegment) => void;
@@ -54,19 +61,22 @@ interface CaptionStore {
   deleteSegment: (id: string) => void;
   splitSegment: (id: string, splitTime: number) => void;
   mergeSegments: (firstId: string, secondId: string) => void;
-  
+
   // Selection actions
   selectSegment: (id: string | null) => void;
   selectSegmentByTime: (time: number) => void;
-  
+
   // Edit actions
   setIsEditing: (editing: boolean) => void;
   markSaved: () => void;
-  
+
   // Utility actions
   reset: () => void;
   getCurrentSegment: () => CaptionSegment | null;
-  getSegmentsByTimeRange: (startTime: number, endTime: number) => CaptionSegment[];
+  getSegmentsByTimeRange: (
+    startTime: number,
+    endTime: number
+  ) => CaptionSegment[];
   clearCaptionsOnStartup: () => void;
 }
 
@@ -92,358 +102,478 @@ export const useCaptionStore = create<CaptionStore>()(
         isEditing: false,
         lastSaved: null,
         captionsCleared: false,
-        
+
         // Video actions
         setVideoUrl: (url) =>
-          set((state) => ({
-            video: { ...state.video, url },
-          }), false, 'setVideoUrl'),
-          
+          set(
+            (state) => ({
+              video: { ...state.video, url },
+            }),
+            false,
+            'setVideoUrl'
+          ),
+
         setVideoFile: async (file) => {
           const url = URL.createObjectURL(file);
-          
-          console.log('📁 Loading video file. Checking for caption recovery...');
-          
+
+          console.log(
+            '📁 Loading video file. Checking for caption recovery...'
+          );
+
           // Create file metadata for recovery matching
           const fileMetadata: VideoFileMetadata = {
             name: file.name,
             size: file.size,
             lastModified: file.lastModified,
           };
-          
+
           // Never store video files - only caption data persists
-          set((state) => ({
-            video: {
-              ...state.video,
-              url,
-              fileName: file.name,
-              fileMetadata,
-              storedFile: null, // Never store video files
-              duration: 0,
-              currentTime: 0,
-              isPlaying: false,
-              isReady: false,
-            },
-          }), false, 'setVideoFile');
-          
+          set(
+            (state) => ({
+              video: {
+                ...state.video,
+                url,
+                fileName: file.name,
+                fileMetadata,
+                storedFile: null, // Never store video files
+                duration: 0,
+                currentTime: 0,
+                isPlaying: false,
+                isReady: false,
+              },
+            }),
+            false,
+            'setVideoFile'
+          );
+
           // Check and conditionally restore captions based on recovery spec
           get().checkAndRestoreCaptions(file);
         },
-        
+
         restoreVideoFromStorage: async () => {
           // Videos are never stored - only caption data persists
           // This is intentional per the recovery spec: user re-uploads video, captions restore
-          console.log('ℹ️ Video files are not stored. Caption data will restore when you re-upload the video.');
+          console.log(
+            'ℹ️ Video files are not stored. Caption data will restore when you re-upload the video.'
+          );
           return false;
         },
-        
+
         clearVideoStorage: () => {
-          set((state) => ({
-            video: {
-              ...initialVideoState,
-            },
-          }), false, 'clearVideoStorage');
+          set(
+            (state) => ({
+              video: {
+                ...initialVideoState,
+              },
+            }),
+            false,
+            'clearVideoStorage'
+          );
         },
-        
+
         checkAndRestoreCaptions: (file) => {
           const state = get();
-          
+
           // Get persisted data from localStorage (since Zustand persist may not have loaded yet)
           const persistedData = localStorage.getItem('caption-editor-store');
           if (!persistedData) {
             console.log('🔍 No persisted caption data found in localStorage');
             return;
           }
-          
-          console.log('🔍 Raw localStorage data:', persistedData.substring(0, 200) + '...');
-          
+
+          console.log(
+            '🔍 Raw localStorage data:',
+            persistedData.substring(0, 200) + '...'
+          );
+
           try {
             const parsed = JSON.parse(persistedData);
             console.log('🔍 Parsed localStorage structure:', {
               hasState: !!parsed.state,
               hasCaptionFile: !!parsed.state?.captionFile,
               hasVideoMetadata: !!parsed.state?.videoFileMetadata,
-              keys: Object.keys(parsed.state || {})
+              keys: Object.keys(parsed.state || {}),
             });
-            
+
             const storedCaptionFile = parsed.state?.captionFile;
             const storedVideoMetadata = parsed.state?.videoFileMetadata;
-            
+
             console.log('🔍 Extracted data:', {
               storedCaptionFile: storedCaptionFile ? 'EXISTS' : 'NULL',
               storedVideoMetadata: storedVideoMetadata ? 'EXISTS' : 'NULL',
               captionSegments: storedCaptionFile?.segments?.length || 0,
-              videoMetadataKeys: storedVideoMetadata ? Object.keys(storedVideoMetadata) : []
+              videoMetadataKeys: storedVideoMetadata
+                ? Object.keys(storedVideoMetadata)
+                : [],
             });
-            
+
             if (!storedCaptionFile || !storedVideoMetadata) {
-              console.log('❌ Missing data - CaptionFile:', !!storedCaptionFile, 'VideoMetadata:', !!storedVideoMetadata);
+              console.log(
+                '❌ Missing data - CaptionFile:',
+                !!storedCaptionFile,
+                'VideoMetadata:',
+                !!storedVideoMetadata
+              );
               return;
             }
-            
+
             // Check if current file matches stored video metadata
-            const currentFileInfo = { name: file.name, size: file.size, lastModified: file.lastModified };
+            const currentFileInfo = {
+              name: file.name,
+              size: file.size,
+              lastModified: file.lastModified,
+            };
             console.log('🔍 File comparison:');
             console.log('  Stored:', storedVideoMetadata);
             console.log('  Current:', currentFileInfo);
-            
-            const isMatch = storedVideoMetadata.name === file.name && 
-                           storedVideoMetadata.size === file.size &&
-                           storedVideoMetadata.lastModified === file.lastModified;
-            
+
+            const isMatch =
+              storedVideoMetadata.name === file.name &&
+              storedVideoMetadata.size === file.size &&
+              storedVideoMetadata.lastModified === file.lastModified;
+
             console.log('  Match result:', isMatch);
-            
+
             if (isMatch) {
               console.log('✅ Video file matches! Restoring captions...');
-              set((state) => ({
-                captionFile: storedCaptionFile,
-                captionsCleared: false, // Reset flag so restored captions can be persisted again
-              }), false, 'restoreCaptions');
+              set(
+                (state) => ({
+                  captionFile: storedCaptionFile,
+                  captionsCleared: false, // Reset flag so restored captions can be persisted again
+                }),
+                false,
+                'restoreCaptions'
+              );
             } else {
-              console.log('❌ Different video file detected. Clearing captions in UI only.');
+              console.log(
+                '❌ Different video file detected. Clearing captions in UI only.'
+              );
               // Clear captions in UI but don't save to localStorage (preserve stored captions for recovery)
-              set((state) => ({
-                captionFile: null,
-                selectedSegmentId: null,
-              }), false, 'clearCaptionsForDifferentVideo');
+              set(
+                (state) => ({
+                  captionFile: null,
+                  selectedSegmentId: null,
+                }),
+                false,
+                'clearCaptionsForDifferentVideo'
+              );
             }
           } catch (error) {
             console.error('Error checking caption recovery:', error);
           }
         },
-          
+
         setVideoDuration: (duration) =>
-          set((state) => ({
-            video: { ...state.video, duration },
-          }), false, 'setVideoDuration'),
-          
+          set(
+            (state) => ({
+              video: { ...state.video, duration },
+            }),
+            false,
+            'setVideoDuration'
+          ),
+
         setCurrentTime: (currentTime) =>
-          set((state) => ({
-            video: { ...state.video, currentTime },
-          }), false, 'setCurrentTime'),
-          
+          set(
+            (state) => ({
+              video: { ...state.video, currentTime },
+            }),
+            false,
+            'setCurrentTime'
+          ),
+
         setIsPlaying: (isPlaying) =>
-          set((state) => ({
-            video: { ...state.video, isPlaying },
-          }), false, 'setIsPlaying'),
-          
+          set(
+            (state) => ({
+              video: { ...state.video, isPlaying },
+            }),
+            false,
+            'setIsPlaying'
+          ),
+
         setVideoReady: (isReady) =>
-          set((state) => ({
-            video: { ...state.video, isReady },
-          }), false, 'setVideoReady'),
-        
+          set(
+            (state) => ({
+              video: { ...state.video, isReady },
+            }),
+            false,
+            'setVideoReady'
+          ),
+
         // Caption actions
         setCaptionFile: (captionFile) => {
-          console.log('📝 setCaptionFile called with:', captionFile ? 'CaptionFile object' : 'null');
-          console.log('📝 Current captionsCleared flag:', get().captionsCleared);
-          
-          set({ 
-            captionFile,
-            captionsCleared: false, // Reset the flag so captions can be persisted
-          }, false, 'setCaptionFile');
-          
+          console.log(
+            '📝 setCaptionFile called with:',
+            captionFile ? 'CaptionFile object' : 'null'
+          );
+          console.log(
+            '📝 Current captionsCleared flag:',
+            get().captionsCleared
+          );
+
+          set(
+            {
+              captionFile,
+              captionsCleared: false, // Reset the flag so captions can be persisted
+            },
+            false,
+            'setCaptionFile'
+          );
+
           console.log('📝 Caption file set, persistence should now work');
         },
-          
+
         addSegment: (segment) =>
-          set((state) => {
-            if (!state.captionFile) return state;
-            
-            const segments = [...state.captionFile.segments, segment]
-              .sort((a, b) => a.startTime - b.startTime);
-              
-            return {
-              captionFile: {
-                ...state.captionFile,
-                segments,
-                updatedAt: new Date().toISOString(),
-              },
-              isEditing: true,
-              lastSaved: new Date(),
-              captionsCleared: false, // Enable persistence for edits
-            };
-          }, false, 'addSegment'),
-          
+          set(
+            (state) => {
+              if (!state.captionFile) return state;
+
+              const segments = [...state.captionFile.segments, segment].sort(
+                (a, b) => a.startTime - b.startTime
+              );
+
+              return {
+                captionFile: {
+                  ...state.captionFile,
+                  segments,
+                  updatedAt: new Date().toISOString(),
+                },
+                isEditing: true,
+                lastSaved: new Date(),
+                captionsCleared: false, // Enable persistence for edits
+              };
+            },
+            false,
+            'addSegment'
+          ),
+
         updateSegment: (id, updates) =>
-          set((state) => {
-            if (!state.captionFile) return state;
-            
-            const segments = state.captionFile.segments.map(segment =>
-              segment.id === id ? { ...segment, ...updates } : segment
-            );
-            
-            return {
-              captionFile: {
-                ...state.captionFile,
-                segments,
-                updatedAt: new Date().toISOString(),
-              },
-              isEditing: true,
-              lastSaved: new Date(),
-              captionsCleared: false, // Enable persistence for edits
-            };
-          }, false, 'updateSegment'),
-          
+          set(
+            (state) => {
+              if (!state.captionFile) return state;
+
+              const segments = state.captionFile.segments.map((segment) =>
+                segment.id === id ? { ...segment, ...updates } : segment
+              );
+
+              return {
+                captionFile: {
+                  ...state.captionFile,
+                  segments,
+                  updatedAt: new Date().toISOString(),
+                },
+                isEditing: true,
+                lastSaved: new Date(),
+                captionsCleared: false, // Enable persistence for edits
+              };
+            },
+            false,
+            'updateSegment'
+          ),
+
         deleteSegment: (id) =>
-          set((state) => {
-            if (!state.captionFile) return state;
-            
-            const segments = state.captionFile.segments.filter(
-              segment => segment.id !== id
-            );
-            
-            return {
-              captionFile: {
-                ...state.captionFile,
-                segments,
-                updatedAt: new Date().toISOString(),
-              },
-              selectedSegmentId: state.selectedSegmentId === id ? null : state.selectedSegmentId,
-              isEditing: true,
-              lastSaved: new Date(),
-              captionsCleared: false, // Enable persistence for edits
-            };
-          }, false, 'deleteSegment'),
-          
+          set(
+            (state) => {
+              if (!state.captionFile) return state;
+
+              const segments = state.captionFile.segments.filter(
+                (segment) => segment.id !== id
+              );
+
+              return {
+                captionFile: {
+                  ...state.captionFile,
+                  segments,
+                  updatedAt: new Date().toISOString(),
+                },
+                selectedSegmentId:
+                  state.selectedSegmentId === id
+                    ? null
+                    : state.selectedSegmentId,
+                isEditing: true,
+                lastSaved: new Date(),
+                captionsCleared: false, // Enable persistence for edits
+              };
+            },
+            false,
+            'deleteSegment'
+          ),
+
         splitSegment: (id, splitTime) =>
-          set((state) => {
-            if (!state.captionFile) return state;
-            
-            const segment = state.captionFile.segments.find(s => s.id === id);
-            if (!segment || splitTime <= segment.startTime || splitTime >= segment.endTime) {
-              return state;
-            }
-            
-            const newSegment: CaptionSegment = {
-              id: `${id}_split_${Date.now()}`,
-              startTime: splitTime,
-              endTime: segment.endTime,
-              text: '',
-              confidence: segment.confidence,
-              speaker: segment.speaker,
-            };
-            
-            const segments = state.captionFile.segments.map(s =>
-              s.id === id 
-                ? { ...s, endTime: splitTime }
-                : s
-            ).concat(newSegment);
-            
-            return {
-              captionFile: {
-                ...state.captionFile,
-                segments,
-                updatedAt: new Date().toISOString(),
-              },
-              isEditing: true,
-              lastSaved: new Date(),
-              captionsCleared: false, // Enable persistence for edits
-            };
-          }, false, 'splitSegment'),
-          
+          set(
+            (state) => {
+              if (!state.captionFile) return state;
+
+              const segment = state.captionFile.segments.find(
+                (s) => s.id === id
+              );
+              if (
+                !segment ||
+                splitTime <= segment.startTime ||
+                splitTime >= segment.endTime
+              ) {
+                return state;
+              }
+
+              const newSegment: CaptionSegment = {
+                id: `${id}_split_${Date.now()}`,
+                startTime: splitTime,
+                endTime: segment.endTime,
+                text: '',
+                confidence: segment.confidence,
+                speaker: segment.speaker,
+              };
+
+              const segments = state.captionFile.segments
+                .map((s) => (s.id === id ? { ...s, endTime: splitTime } : s))
+                .concat(newSegment);
+
+              return {
+                captionFile: {
+                  ...state.captionFile,
+                  segments,
+                  updatedAt: new Date().toISOString(),
+                },
+                isEditing: true,
+                lastSaved: new Date(),
+                captionsCleared: false, // Enable persistence for edits
+              };
+            },
+            false,
+            'splitSegment'
+          ),
+
         mergeSegments: (firstId, secondId) =>
-          set((state) => {
-            if (!state.captionFile) return state;
-            
-            const first = state.captionFile.segments.find(s => s.id === firstId);
-            const second = state.captionFile.segments.find(s => s.id === secondId);
-            
-            if (!first || !second) return state;
-            
-            // Ensure proper order
-            const [earlier, later] = first.startTime < second.startTime 
-              ? [first, second] : [second, first];
-            
-            const mergedSegment: CaptionSegment = {
-              id: earlier.id,
-              startTime: earlier.startTime,
-              endTime: later.endTime,
-              text: `${earlier.text} ${later.text}`.trim(),
-              confidence: Math.min(earlier.confidence || 1, later.confidence || 1),
-              speaker: earlier.speaker === later.speaker ? earlier.speaker : undefined,
-            };
-            
-            const segments = state.captionFile.segments
-              .filter(s => s.id !== firstId && s.id !== secondId)
-              .concat(mergedSegment)
-              .sort((a, b) => a.startTime - b.startTime);
-            
-            return {
-              captionFile: {
-                ...state.captionFile,
-                segments,
-                updatedAt: new Date().toISOString(),
-              },
-              selectedSegmentId: mergedSegment.id,
-              isEditing: true,
-              lastSaved: new Date(),
-              captionsCleared: false, // Enable persistence for edits
-            };
-          }, false, 'mergeSegments'),
-        
+          set(
+            (state) => {
+              if (!state.captionFile) return state;
+
+              const first = state.captionFile.segments.find(
+                (s) => s.id === firstId
+              );
+              const second = state.captionFile.segments.find(
+                (s) => s.id === secondId
+              );
+
+              if (!first || !second) return state;
+
+              // Ensure proper order
+              const [earlier, later] =
+                first.startTime < second.startTime
+                  ? [first, second]
+                  : [second, first];
+
+              const mergedSegment: CaptionSegment = {
+                id: earlier.id,
+                startTime: earlier.startTime,
+                endTime: later.endTime,
+                text: `${earlier.text} ${later.text}`.trim(),
+                confidence: Math.min(
+                  earlier.confidence || 1,
+                  later.confidence || 1
+                ),
+                speaker:
+                  earlier.speaker === later.speaker
+                    ? earlier.speaker
+                    : undefined,
+              };
+
+              const segments = state.captionFile.segments
+                .filter((s) => s.id !== firstId && s.id !== secondId)
+                .concat(mergedSegment)
+                .sort((a, b) => a.startTime - b.startTime);
+
+              return {
+                captionFile: {
+                  ...state.captionFile,
+                  segments,
+                  updatedAt: new Date().toISOString(),
+                },
+                selectedSegmentId: mergedSegment.id,
+                isEditing: true,
+                lastSaved: new Date(),
+                captionsCleared: false, // Enable persistence for edits
+              };
+            },
+            false,
+            'mergeSegments'
+          ),
+
         // Selection actions
         selectSegment: (selectedSegmentId) =>
           set({ selectedSegmentId }, false, 'selectSegment'),
-          
+
         selectSegmentByTime: (time) =>
-          set((state) => {
-            if (!state.captionFile) return state;
-            
-            const segment = state.captionFile.segments.find(
-              s => time >= s.startTime && time <= s.endTime
-            );
-            
-            return {
-              selectedSegmentId: segment?.id || null,
-            };
-          }, false, 'selectSegmentByTime'),
-        
+          set(
+            (state) => {
+              if (!state.captionFile) return state;
+
+              const segment = state.captionFile.segments.find(
+                (s) => time >= s.startTime && time <= s.endTime
+              );
+
+              return {
+                selectedSegmentId: segment?.id || null,
+              };
+            },
+            false,
+            'selectSegmentByTime'
+          ),
+
         // Edit actions
-        setIsEditing: (isEditing) =>
-          set({ isEditing }, false, 'setIsEditing'),
-          
+        setIsEditing: (isEditing) => set({ isEditing }, false, 'setIsEditing'),
+
         markSaved: () =>
           set({ lastSaved: new Date(), isEditing: false }, false, 'markSaved'),
-        
+
         // Utility actions
         reset: () =>
-          set({
-            video: initialVideoState,
-            captionFile: null,
-            selectedSegmentId: null,
-            isEditing: false,
-            lastSaved: null,
-          }, false, 'reset'),
-          
+          set(
+            {
+              video: initialVideoState,
+              captionFile: null,
+              selectedSegmentId: null,
+              isEditing: false,
+              lastSaved: null,
+            },
+            false,
+            'reset'
+          ),
+
         getCurrentSegment: () => {
           const state = get();
           if (!state.captionFile || !state.selectedSegmentId) return null;
-          
-          return state.captionFile.segments.find(
-            s => s.id === state.selectedSegmentId
-          ) || null;
+
+          return (
+            state.captionFile.segments.find(
+              (s) => s.id === state.selectedSegmentId
+            ) || null
+          );
         },
-        
+
         getSegmentsByTimeRange: (startTime, endTime) => {
           const state = get();
           if (!state.captionFile) return [];
-          
+
           return state.captionFile.segments.filter(
-            s => s.startTime < endTime && s.endTime > startTime
+            (s) => s.startTime < endTime && s.endTime > startTime
           );
         },
-        
+
         clearCaptionsOnStartup: () => {
           // Clear captions on startup per recovery spec - only restore when video matches
           if (!get().captionsCleared && get().captionFile !== null) {
             console.log('🔄 Clearing auto-restored captions per recovery spec');
-            
+
             // Use skipPersist: true to prevent this clearing from being saved to localStorage
-            set((state) => ({
-              captionFile: null,
-              selectedSegmentId: null,
-              captionsCleared: true,
-            }), false, 'clearCaptionsOnStartup');
+            set(
+              (state) => ({
+                captionFile: null,
+                selectedSegmentId: null,
+                captionsCleared: true,
+              }),
+              false,
+              'clearCaptionsOnStartup'
+            );
           }
         },
       }),
@@ -453,21 +583,25 @@ export const useCaptionStore = create<CaptionStore>()(
           console.log('🔧 partialize called with state:', {
             hasCaptionFile: !!state.captionFile,
             captionsCleared: state.captionsCleared,
-            videoMetadata: !!state.video.fileMetadata
+            videoMetadata: !!state.video.fileMetadata,
           });
-          
+
           // Special case: If captions were cleared on startup, preserve existing localStorage data
           if (state.captionsCleared && state.captionFile === null) {
-            console.log('🔧 Startup clearing detected, checking existing data...');
+            console.log(
+              '🔧 Startup clearing detected, checking existing data...'
+            );
             // Get the current localStorage data to preserve captionFile
             const existingData = localStorage.getItem('caption-editor-store');
             if (existingData) {
               try {
                 const parsed = JSON.parse(existingData);
                 const existingCaptionFile = parsed.state?.captionFile;
-                
+
                 if (existingCaptionFile) {
-                  console.log('🔒 Preserving existing caption data during startup clearing');
+                  console.log(
+                    '🔒 Preserving existing caption data during startup clearing'
+                  );
                   const existingVideoMetadata = parsed.state?.videoFileMetadata;
                   const preserved = {
                     lastSaved: state.lastSaved,
@@ -478,28 +612,35 @@ export const useCaptionStore = create<CaptionStore>()(
                   return preserved;
                 }
               } catch (error) {
-                console.warn('Could not parse existing localStorage data:', error);
+                console.warn(
+                  'Could not parse existing localStorage data:',
+                  error
+                );
               }
             }
           }
-          
+
           // Normal persistence logic
-          const shouldPersistCaptions = state.captionFile !== null && !state.captionsCleared;
+          const shouldPersistCaptions =
+            state.captionFile !== null && !state.captionsCleared;
           console.log('🔧 shouldPersistCaptions:', shouldPersistCaptions);
-          
+
           const persistedState: any = {
             lastSaved: state.lastSaved,
             videoFileMetadata: state.video.fileMetadata,
           };
-          
+
           // Only add captionFile to persisted state if we should persist it
           if (shouldPersistCaptions) {
             persistedState.captionFile = state.captionFile;
-            console.log('🔧 Adding captionFile to persisted state, segments:', state.captionFile?.segments?.length || 0);
+            console.log(
+              '🔧 Adding captionFile to persisted state, segments:',
+              state.captionFile?.segments?.length || 0
+            );
           } else {
             console.log('🔧 NOT persisting captionFile');
           }
-          
+
           console.log('🔧 Final persisted state:', persistedState);
           return persistedState;
         },

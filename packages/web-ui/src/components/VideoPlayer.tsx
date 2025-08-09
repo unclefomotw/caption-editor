@@ -28,64 +28,77 @@ export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
   } = useCaptionStore();
 
   // Handle file upload with persistence
-  const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
-    console.log('🔥 FILE UPLOAD HANDLER CALLED!');
-    console.log('Files count:', event.target.files?.length || 0);
+  const handleFileUpload = useCallback(
+    async (event: React.ChangeEvent<HTMLInputElement>) => {
+      console.log('🔥 FILE UPLOAD HANDLER CALLED!');
+      console.log('Files count:', event.target.files?.length || 0);
 
-    const file = event.target.files?.[0];
-    if (!file) {
-      console.log('❌ No file selected');
-      return;
-    }
+      const file = event.target.files?.[0];
+      if (!file) {
+        console.log('❌ No file selected');
+        return;
+      }
 
-    console.log('📁 File details:', {
-      name: file.name,
-      type: file.type,
-      size: file.size
-    });
+      console.log('📁 File details:', {
+        name: file.name,
+        type: file.type,
+        size: file.size,
+      });
 
-    // Validate file type
-    const supportedTypes = ['video/mp4', 'video/mov', 'video/quicktime', 'video/x-m4v'];
-    if (!supportedTypes.includes(file.type)) {
-      console.log('❌ Unsupported file type:', file.type);
-      alert('Please select a supported video file (.mp4, .mov, .m4v)');
-      return;
-    }
+      // Validate file type
+      const supportedTypes = [
+        'video/mp4',
+        'video/mov',
+        'video/quicktime',
+        'video/x-m4v',
+      ];
+      if (!supportedTypes.includes(file.type)) {
+        console.log('❌ Unsupported file type:', file.type);
+        alert('Please select a supported video file (.mp4, .mov, .m4v)');
+        return;
+      }
 
-    console.log('📁 Loading video file. Caption edits will auto-save.');
-    await setVideoFile(file);
-    
-    console.log('✅ Video file stored! Calling onVideoLoad...');
-    onVideoLoad?.(video.url || '');
-    console.log('🎬 File upload process complete!');
-  }, [setVideoFile, onVideoLoad, video.url]);
+      console.log('📁 Loading video file. Caption edits will auto-save.');
+      await setVideoFile(file);
 
+      console.log('✅ Video file stored! Calling onVideoLoad...');
+      onVideoLoad?.(video.url || '');
+      console.log('🎬 File upload process complete!');
+    },
+    [setVideoFile, onVideoLoad, video.url]
+  );
 
   // Handle time updates (HTML5 video event)
-  const handleTimeUpdate = useCallback((event: React.SyntheticEvent<HTMLVideoElement>) => {
-    const target = event.target as HTMLVideoElement;
-    const currentTime = target.currentTime;
+  const handleTimeUpdate = useCallback(
+    (event: React.SyntheticEvent<HTMLVideoElement>) => {
+      const target = event.target as HTMLVideoElement;
+      const currentTime = target.currentTime;
 
-    setCurrentTime(currentTime);
-    selectSegmentByTime(currentTime);
-  }, [setCurrentTime, selectSegmentByTime]);
+      setCurrentTime(currentTime);
+      selectSegmentByTime(currentTime);
+    },
+    [setCurrentTime, selectSegmentByTime]
+  );
 
   // Handle duration change (HTML5 video event)
-  const handleDurationChange = useCallback((event: React.SyntheticEvent<HTMLVideoElement>) => {
-    const target = event.target as HTMLVideoElement;
-    const duration = target.duration;
-    console.log('HTML5 onDurationChange - duration:', duration);
+  const handleDurationChange = useCallback(
+    (event: React.SyntheticEvent<HTMLVideoElement>) => {
+      const target = event.target as HTMLVideoElement;
+      const duration = target.duration;
+      console.log('HTML5 onDurationChange - duration:', duration);
 
-    if (duration && duration > 0 && !isNaN(duration)) {
-      setVideoDuration(duration);
-      setVideoReady(true);
-      console.log('✅ Duration set successfully:', duration);
-      
-      // Sample caption auto-generation removed - bidirectional sync is tested and working
-      // Users will import caption files or use AI generation instead
-      console.log('✅ Video ready for caption editing');
-    }
-  }, [setVideoDuration, setVideoReady]);
+      if (duration && duration > 0 && !isNaN(duration)) {
+        setVideoDuration(duration);
+        setVideoReady(true);
+        console.log('✅ Duration set successfully:', duration);
+
+        // Sample caption auto-generation removed - bidirectional sync is tested and working
+        // Users will import caption files or use AI generation instead
+        console.log('✅ Video ready for caption editing');
+      }
+    },
+    [setVideoDuration, setVideoReady]
+  );
 
   // Auto-restore video from storage on component mount
   useEffect(() => {
@@ -95,7 +108,7 @@ export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
         console.log('✅ Video restored from localStorage');
       }
     };
-    
+
     restoreVideo();
   }, [restoreVideoFromStorage]);
 
@@ -111,7 +124,7 @@ export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
             duration: videoElement.duration,
             readyState: videoElement.readyState,
             networkState: videoElement.networkState,
-            error: videoElement.error
+            error: videoElement.error,
           });
         } else {
           console.log('❌ No video element found in DOM');
@@ -133,7 +146,6 @@ export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
     console.error('ReactPlayer error:', error);
   }, []);
 
-
   // Handle play/pause
   const togglePlayPause = useCallback(() => {
     const newPlayingState = !video.isPlaying;
@@ -141,18 +153,21 @@ export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
   }, [video.isPlaying, setIsPlaying]);
 
   // Handle seek (v3.x uses HTMLMediaElement interface)
-  const handleSeek = useCallback((values: number[]) => {
-    const seekTime = values[0];
+  const handleSeek = useCallback(
+    (values: number[]) => {
+      const seekTime = values[0];
 
-    // Use ReactPlayer ref with HTMLMediaElement interface
-    if (playerRef.current) {
-      playerRef.current.currentTime = seekTime;
-      console.log('🎯 Seeking to:', seekTime);
-    }
+      // Use ReactPlayer ref with HTMLMediaElement interface
+      if (playerRef.current) {
+        playerRef.current.currentTime = seekTime;
+        console.log('🎯 Seeking to:', seekTime);
+      }
 
-    setCurrentTime(seekTime);
-    selectSegmentByTime(seekTime);
-  }, [setCurrentTime, selectSegmentByTime]);
+      setCurrentTime(seekTime);
+      selectSegmentByTime(seekTime);
+    },
+    [setCurrentTime, selectSegmentByTime]
+  );
 
   // Skip forward/backward
   const skipForward = useCallback(() => {
@@ -192,7 +207,10 @@ export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+      if (
+        event.target instanceof HTMLInputElement ||
+        event.target instanceof HTMLTextAreaElement
+      ) {
         return; // Don't interfere with text inputs
       }
 
@@ -215,7 +233,6 @@ export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [togglePlayPause, skipBackward, skipForward]);
-
 
   return (
     <div className={`bg-black rounded-lg overflow-hidden ${className}`}>

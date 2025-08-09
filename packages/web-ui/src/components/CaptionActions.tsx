@@ -3,20 +3,14 @@
 import { useState, useCallback } from 'react';
 import { useCaptionStore } from '@/stores/caption-store';
 import { Button } from '@/components/ui/button';
-import { 
-  Upload, 
-  Download, 
-  FileText, 
-  Sparkles,
-  Loader2 
-} from 'lucide-react';
-import { 
-  parseVTT, 
-  parseSRT, 
-  exportToVTT, 
-  exportToSRT, 
-  downloadFile, 
-  openFileDialog 
+import { Upload, Download, FileText, Sparkles, Loader2 } from 'lucide-react';
+import {
+  parseVTT,
+  parseSRT,
+  exportToVTT,
+  exportToSRT,
+  downloadFile,
+  openFileDialog,
 } from '@/utils/caption-parsers';
 
 export function CaptionActions() {
@@ -35,21 +29,26 @@ export function CaptionActions() {
     try {
       const file = await openFileDialog('.vtt,.srt');
       console.log('📁 Importing caption file:', file.name);
-      
+
       const content = await file.text();
       let captionFileData;
-      
+
       if (file.name.toLowerCase().endsWith('.vtt')) {
         captionFileData = parseVTT(content, file.name);
       } else if (file.name.toLowerCase().endsWith('.srt')) {
         captionFileData = parseSRT(content, file.name);
       } else {
-        throw new Error('Unsupported file format. Please select a VTT or SRT file.');
+        throw new Error(
+          'Unsupported file format. Please select a VTT or SRT file.'
+        );
       }
-      
-      console.log('✅ Successfully parsed', captionFileData.segments.length, 'caption segments');
+
+      console.log(
+        '✅ Successfully parsed',
+        captionFileData.segments.length,
+        'caption segments'
+      );
       setCaptionFile(captionFileData);
-      
     } catch (error) {
       console.error('Error importing caption file:', error);
       if (error instanceof Error) {
@@ -107,10 +106,11 @@ export function CaptionActions() {
 
   return (
     <div className="bg-white rounded-lg border p-4">
-      <h3 className="text-sm font-medium text-gray-700 mb-3">Caption Actions</h3>
-      
+      <h3 className="text-sm font-medium text-gray-700 mb-3">
+        Caption Actions
+      </h3>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        
         {/* Import Captions */}
         <Button
           onClick={handleImportCaption}
@@ -166,19 +166,19 @@ export function CaptionActions() {
           )}
           Export SRT
         </Button>
-        
       </div>
-      
+
       {/* Status Messages */}
       <div className="mt-3 text-xs text-gray-500">
-        {!hasVideo && (
-          <p>Upload a video to import captions</p>
-        )}
+        {!hasVideo && <p>Upload a video to import captions</p>}
         {hasVideo && !hasCaptions && (
           <p>Import caption files or generate with AI</p>
         )}
         {hasCaptions && (
-          <p>{captionFile.segments.length} segments loaded • {captionFile.format.toUpperCase()} format</p>
+          <p>
+            {captionFile.segments.length} segments loaded •{' '}
+            {captionFile.format.toUpperCase()} format
+          </p>
         )}
       </div>
     </div>
