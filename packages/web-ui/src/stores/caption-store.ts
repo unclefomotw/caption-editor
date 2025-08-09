@@ -4,6 +4,12 @@ import type { CaptionSegment, CaptionFile } from '../../../common-types/src/type
 import { fileToStoredFile, storedFileToBlob, isStoredVideoValid } from '../utils/persistence';
 import type { StoredVideoFile } from '../utils/persistence';
 
+interface VideoFileMetadata {
+  name: string;
+  size: number;
+  lastModified: number;
+}
+
 interface VideoState {
   url: string | null;
   duration: number;
@@ -12,6 +18,7 @@ interface VideoState {
   isReady: boolean;
   storedFile: StoredVideoFile | null; // For persistence
   fileName: string | null; // For display
+  fileMetadata: VideoFileMetadata | null; // For recovery matching
 }
 
 interface CaptionStore {
@@ -26,6 +33,9 @@ interface CaptionStore {
   isEditing: boolean;
   lastSaved: Date | null;
   
+  // Recovery control
+  captionsCleared: boolean; // Track if captions were cleared on startup
+  
   // Video actions
   setVideoUrl: (url: string) => void;
   setVideoDuration: (duration: number) => void;
@@ -35,6 +45,7 @@ interface CaptionStore {
   setVideoFile: (file: File) => Promise<void>;
   restoreVideoFromStorage: () => Promise<boolean>;
   clearVideoStorage: () => void;
+  checkAndRestoreCaptions: (file: File) => void;
   
   // Caption actions
   setCaptionFile: (file: CaptionFile) => void;
@@ -56,6 +67,7 @@ interface CaptionStore {
   reset: () => void;
   getCurrentSegment: () => CaptionSegment | null;
   getSegmentsByTimeRange: (startTime: number, endTime: number) => CaptionSegment[];
+  clearCaptionsOnStartup: () => void;
 }
 
 const initialVideoState: VideoState = {
@@ -66,18 +78,20 @@ const initialVideoState: VideoState = {
   isReady: false,
   storedFile: null,
   fileName: null,
+  fileMetadata: null,
 };
 
 export const useCaptionStore = create<CaptionStore>()(
   devtools(
     persist(
       (set, get) => ({
-        // Initial state
+        // Initial state - per recovery spec, captions should NOT auto-restore
         video: initialVideoState,
-        captionFile: null,
+        captionFile: null, // Will be set by clearCaptionsOnStartup if needed
         selectedSegmentId: null,
         isEditing: false,
         lastSaved: null,
+        captionsCleared: false,
         
         // Video actions
         setVideoUrl: (url) =>
@@ -88,15 +102,22 @@ export const useCaptionStore = create<CaptionStore>()(
         setVideoFile: async (file) => {
           const url = URL.createObjectURL(file);
           
-          console.log('📁 Loading video file (captions will auto-save, video must be re-uploaded after refresh)');
+          console.log('📁 Loading video file. Checking for caption recovery...');
+          
+          // Create file metadata for recovery matching
+          const fileMetadata: VideoFileMetadata = {
+            name: file.name,
+            size: file.size,
+            lastModified: file.lastModified,
+          };
           
           // Never store video files - only caption data persists
-          // This meets the recovery spec: user re-uploads video, captions restore
           set((state) => ({
             video: {
               ...state.video,
               url,
               fileName: file.name,
+              fileMetadata,
               storedFile: null, // Never store video files
               duration: 0,
               currentTime: 0,
@@ -104,6 +125,9 @@ export const useCaptionStore = create<CaptionStore>()(
               isReady: false,
             },
           }), false, 'setVideoFile');
+          
+          // Check and conditionally restore captions based on recovery spec
+          get().checkAndRestoreCaptions(file);
         },
         
         restoreVideoFromStorage: async () => {
@@ -119,6 +143,72 @@ export const useCaptionStore = create<CaptionStore>()(
               ...initialVideoState,
             },
           }), false, 'clearVideoStorage');
+        },
+        
+        checkAndRestoreCaptions: (file) => {
+          const state = get();
+          
+          // Get persisted data from localStorage (since Zustand persist may not have loaded yet)
+          const persistedData = localStorage.getItem('caption-editor-store');
+          if (!persistedData) {
+            console.log('🔍 No persisted caption data found in localStorage');
+            return;
+          }
+          
+          console.log('🔍 Raw localStorage data:', persistedData.substring(0, 200) + '...');
+          
+          try {
+            const parsed = JSON.parse(persistedData);
+            console.log('🔍 Parsed localStorage structure:', {
+              hasState: !!parsed.state,
+              hasCaptionFile: !!parsed.state?.captionFile,
+              hasVideoMetadata: !!parsed.state?.videoFileMetadata,
+              keys: Object.keys(parsed.state || {})
+            });
+            
+            const storedCaptionFile = parsed.state?.captionFile;
+            const storedVideoMetadata = parsed.state?.videoFileMetadata;
+            
+            console.log('🔍 Extracted data:', {
+              storedCaptionFile: storedCaptionFile ? 'EXISTS' : 'NULL',
+              storedVideoMetadata: storedVideoMetadata ? 'EXISTS' : 'NULL',
+              captionSegments: storedCaptionFile?.segments?.length || 0,
+              videoMetadataKeys: storedVideoMetadata ? Object.keys(storedVideoMetadata) : []
+            });
+            
+            if (!storedCaptionFile || !storedVideoMetadata) {
+              console.log('❌ Missing data - CaptionFile:', !!storedCaptionFile, 'VideoMetadata:', !!storedVideoMetadata);
+              return;
+            }
+            
+            // Check if current file matches stored video metadata
+            const currentFileInfo = { name: file.name, size: file.size, lastModified: file.lastModified };
+            console.log('🔍 File comparison:');
+            console.log('  Stored:', storedVideoMetadata);
+            console.log('  Current:', currentFileInfo);
+            
+            const isMatch = storedVideoMetadata.name === file.name && 
+                           storedVideoMetadata.size === file.size &&
+                           storedVideoMetadata.lastModified === file.lastModified;
+            
+            console.log('  Match result:', isMatch);
+            
+            if (isMatch) {
+              console.log('✅ Video file matches! Restoring captions...');
+              set((state) => ({
+                captionFile: storedCaptionFile,
+              }), false, 'restoreCaptions');
+            } else {
+              console.log('❌ Different video file detected. Clearing captions in UI only.');
+              // Clear captions in UI but don't save to localStorage (preserve stored captions for recovery)
+              set((state) => ({
+                captionFile: null,
+                selectedSegmentId: null,
+              }), false, 'clearCaptionsForDifferentVideo');
+            }
+          } catch (error) {
+            console.error('Error checking caption recovery:', error);
+          }
         },
           
         setVideoDuration: (duration) =>
@@ -142,8 +232,17 @@ export const useCaptionStore = create<CaptionStore>()(
           }), false, 'setVideoReady'),
         
         // Caption actions
-        setCaptionFile: (captionFile) =>
-          set({ captionFile }, false, 'setCaptionFile'),
+        setCaptionFile: (captionFile) => {
+          console.log('📝 setCaptionFile called with:', captionFile ? 'CaptionFile object' : 'null');
+          console.log('📝 Current captionsCleared flag:', get().captionsCleared);
+          
+          set({ 
+            captionFile,
+            captionsCleared: false, // Reset the flag so captions can be persisted
+          }, false, 'setCaptionFile');
+          
+          console.log('📝 Caption file set, persistence should now work');
+        },
           
         addSegment: (segment) =>
           set((state) => {
@@ -160,6 +259,7 @@ export const useCaptionStore = create<CaptionStore>()(
               },
               isEditing: true,
               lastSaved: new Date(),
+              captionsCleared: false, // Enable persistence for edits
             };
           }, false, 'addSegment'),
           
@@ -179,6 +279,7 @@ export const useCaptionStore = create<CaptionStore>()(
               },
               isEditing: true,
               lastSaved: new Date(),
+              captionsCleared: false, // Enable persistence for edits
             };
           }, false, 'updateSegment'),
           
@@ -199,6 +300,7 @@ export const useCaptionStore = create<CaptionStore>()(
               selectedSegmentId: state.selectedSegmentId === id ? null : state.selectedSegmentId,
               isEditing: true,
               lastSaved: new Date(),
+              captionsCleared: false, // Enable persistence for edits
             };
           }, false, 'deleteSegment'),
           
@@ -234,6 +336,7 @@ export const useCaptionStore = create<CaptionStore>()(
               },
               isEditing: true,
               lastSaved: new Date(),
+              captionsCleared: false, // Enable persistence for edits
             };
           }, false, 'splitSegment'),
           
@@ -273,6 +376,7 @@ export const useCaptionStore = create<CaptionStore>()(
               selectedSegmentId: mergedSegment.id,
               isEditing: true,
               lastSaved: new Date(),
+              captionsCleared: false, // Enable persistence for edits
             };
           }, false, 'mergeSegments'),
         
@@ -327,16 +431,79 @@ export const useCaptionStore = create<CaptionStore>()(
             s => s.startTime < endTime && s.endTime > startTime
           );
         },
+        
+        clearCaptionsOnStartup: () => {
+          // Clear captions on startup per recovery spec - only restore when video matches
+          if (!get().captionsCleared && get().captionFile !== null) {
+            console.log('🔄 Clearing auto-restored captions per recovery spec');
+            
+            // Use skipPersist: true to prevent this clearing from being saved to localStorage
+            set((state) => ({
+              captionFile: null,
+              selectedSegmentId: null,
+              captionsCleared: true,
+            }), false, 'clearCaptionsOnStartup');
+          }
+        },
       }),
       {
         name: 'caption-editor-store',
-        partialize: (state) => ({
-          captionFile: state.captionFile,
-          lastSaved: state.lastSaved,
-          // Only persist caption data - no video storage per recovery spec
-          // User re-uploads video, captions restore automatically
-        }),
+        partialize: (state) => {
+          console.log('🔧 partialize called with state:', {
+            hasCaptionFile: !!state.captionFile,
+            captionsCleared: state.captionsCleared,
+            videoMetadata: !!state.video.fileMetadata
+          });
+          
+          // Special case: If captions were cleared on startup, preserve existing localStorage data
+          if (state.captionsCleared && state.captionFile === null) {
+            console.log('🔧 Startup clearing detected, checking existing data...');
+            // Get the current localStorage data to preserve captionFile
+            const existingData = localStorage.getItem('caption-editor-store');
+            if (existingData) {
+              try {
+                const parsed = JSON.parse(existingData);
+                const existingCaptionFile = parsed.state?.captionFile;
+                
+                if (existingCaptionFile) {
+                  console.log('🔒 Preserving existing caption data during startup clearing');
+                  const existingVideoMetadata = parsed.state?.videoFileMetadata;
+                  const preserved = {
+                    lastSaved: state.lastSaved,
+                    videoFileMetadata: existingVideoMetadata, // Preserve the existing video metadata too!
+                    captionFile: existingCaptionFile, // Preserve the existing data
+                  };
+                  console.log('🔧 Returning preserved state:', preserved);
+                  return preserved;
+                }
+              } catch (error) {
+                console.warn('Could not parse existing localStorage data:', error);
+              }
+            }
+          }
+          
+          // Normal persistence logic
+          const shouldPersistCaptions = state.captionFile !== null && !state.captionsCleared;
+          console.log('🔧 shouldPersistCaptions:', shouldPersistCaptions);
+          
+          const persistedState: any = {
+            lastSaved: state.lastSaved,
+            videoFileMetadata: state.video.fileMetadata,
+          };
+          
+          // Only add captionFile to persisted state if we should persist it
+          if (shouldPersistCaptions) {
+            persistedState.captionFile = state.captionFile;
+            console.log('🔧 Adding captionFile to persisted state, segments:', state.captionFile?.segments?.length || 0);
+          } else {
+            console.log('🔧 NOT persisting captionFile');
+          }
+          
+          console.log('🔧 Final persisted state:', persistedState);
+          return persistedState;
+        },
         version: 1, // Add versioning for future migrations
+        // Don't use merge function - handle recovery manually in checkAndRestoreCaptions
       }
     ),
     {

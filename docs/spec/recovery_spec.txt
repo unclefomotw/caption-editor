@@ -1,0 +1,16 @@
+*** Test Cases ***
+
+No caption recovery before a video file is loaded
+    Given the user is editing captions of a video
+    When the user closes the browser tab, and reopens the app, and before loading any video file
+    Then the same caption should NOT be in the editor
+
+Local caption edit recovery for the same video file
+    Given the user is editing captions of a video
+    When the user closes the browser tab, and reopens the app, and loads the SAME video file before loading any other video file
+    Then the same caption should be in the editor
+
+Caption recovery only after the same video file is loaded
+    Given the user is editing captions of a video
+    When the user closes the browser tab, and reopens the app, and loads a DIFFERENT video file before loading any other video file
+    Then the same caption should NOT be in the editor

@@ -1,9 +1,19 @@
+'use client';
+
+import { useEffect } from 'react';
 import { VideoPlayer } from '@/components/VideoPlayer';
 import { CaptionEditor } from '@/components/CaptionEditor';
 import { StorageStatus } from '@/components/StorageStatus';
 import { CaptionActions } from '@/components/CaptionActions';
+import { useCaptionStore } from '@/stores/caption-store';
 
 export default function Home() {
+  const { clearCaptionsOnStartup } = useCaptionStore();
+  
+  // Clear captions on app startup per recovery spec
+  useEffect(() => {
+    clearCaptionsOnStartup();
+  }, [clearCaptionsOnStartup]);
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Header */}
