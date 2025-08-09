@@ -112,34 +112,22 @@ caption-editor/
 ├── package.json          # Workspace root
 ├── turbo.json           # Turborepo config
 ├── pyproject.toml       # Python workspace root
-├── CLAUDE.md           # This file
+├── CLAUDE.md            # Development notes
 └── packages/
-    ├── web-ui/         # Next.js frontend (COMPLETE)
-    │   ├── src/app/
-    │   ├── components.json
-    │   └── package.json
-    ├── api-server/     # FastAPI backend (COMPLETE)
-    │   ├── src/caption_editor_api/
-    │   │   ├── main.py           # FastAPI app
-    │   │   └── routers/          # API endpoints
-    │   │       ├── health.py     # Health check
-    │   │       └── captions.py   # Caption processing
-    │   ├── pyproject.toml        # Poetry config
-    │   ├── poetry.lock          # Locked dependencies
-    │   └── .venv/               # Virtual environment
-    └── common-types/   # Shared schemas (COMPLETE)
+    ├── web-ui/          # Next.js frontend (COMPLETE)
+    │   └── src/
+    │       ├── app/            # Next.js app router
+    │       ├── components/     # UI components
+    │       ├── stores/         # Zustand state management
+    │       └── utils/          # VTT/SRT parsers, file helpers
+    ├── api-server/      # FastAPI backend (COMPLETE)
+    │   └── src/caption_editor_api/
+    │       ├── main.py         # FastAPI app
+    │       └── routers/        # API endpoints
+    └── common-types/    # Shared schemas (COMPLETE)
         ├── schemas/            # JSON schema definitions
-        │   ├── caption-segment.json
-        │   ├── caption-file.json
-        │   └── api-contracts.json
-        ├── src/types/         # Generated TypeScript
-        │   ├── caption-segment.ts
-        │   ├── caption-file.ts
-        │   ├── api-contracts.ts
-        │   └── index.ts       # Exports all types
-        ├── scripts/           # Type generation
-        │   └── generate-types.js
-        └── package.json
+        ├── scripts/            # Type generation automation
+        └── src/types/          # Generated TypeScript types
 ```
 
 ## Rules for Successors
