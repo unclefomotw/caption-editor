@@ -22,6 +22,7 @@ interface VideoState {
   storedFile: StoredVideoFile | null; // For persistence
   fileName: string | null; // For display
   fileMetadata: VideoFileMetadata | null; // For recovery matching
+  file: File | null; // Original file for backend upload
 }
 
 interface CaptionStore {
@@ -99,6 +100,7 @@ const initialVideoState: VideoState = {
   storedFile: null,
   fileName: null,
   fileMetadata: null,
+  file: null,
 };
 
 export const useCaptionStore = create<CaptionStore>()(
@@ -153,6 +155,7 @@ export const useCaptionStore = create<CaptionStore>()(
                 url,
                 fileName: file.name,
                 fileMetadata,
+                file, // Store the original file for backend upload
                 storedFile: null, // Never store video files
                 duration: 0,
                 currentTime: 0,

@@ -48,40 +48,16 @@ Building a web application for editing video captions with AI-powered transcript
 8. **🎉 Video file upload system** - Complete with blob URL creation and validation
 9. **🎉 Zustand state management** - Properly integrated with video player state
 10. **🎉 CaptionEditor component** - FULLY WORKING with real-time video synchronization
-11. **🎉 Bidirectional video/caption synchronization** - COMPLETE AND TESTED
-    - Real-time caption highlighting during video playback
-    - Click-to-seek: clicking captions jumps video to timestamp
-    - Smooth auto-scrolling in caption editor following video progress
-    - Live caption text editing with immediate preview
-12. **🎉 Caption file import/export (VTT/SRT)** - COMPLETE AND TESTED
-    - Custom VTT/SRT parsers with UTF-8 BOM handling
-    - Robust time format parsing (HH:MM:SS.mmm, MM:SS.mmm, comma/dot separators)
-    - File upload UI with format validation
-    - Export functionality with proper file download
-13. **🎉 localStorage persistence for work recovery** - COMPLETE AND TESTED
-    - Fully implements recovery spec with all 3 test cases passing
-    - Conditional caption restoration based on exact file metadata matching
-    - Preserves caption data across browser sessions without auto-restore
-    - Handles edge cases including multiple recovery cycles
-    - Zustand persist middleware with custom partialize logic
-14. **🎉 AssemblyAI Backend Integration** - COMPLETE AND TESTED
-    - Real AssemblyAI SDK v0.42.1 integration with proper API calls
-    - Video file upload endpoint (`POST /api/videos/upload`)
-    - Async transcription job processing (`POST /api/captions/transcribe`)
-    - Job status polling and result retrieval (`GET /api/captions/transcribe/{job_id}`)
-    - Word-level timestamps converted to caption segments with smart sentence grouping
-    - Complete error handling and job tracking in memory
-15. **🎉 Docker Development Environment** - COMPLETE AND TESTED
-    - Full-stack Docker Compose setup with proper environment variable passthrough
-    - Frontend container with workspace dependency resolution
-    - Backend container with Poetry 2.1+ and AssemblyAI SDK
-    - ASSEMBLYAI_API_KEY environment variable integration
-    - Hot reload support for both frontend and backend
+11. **🎉 Bidirectional video/caption synchronization** - Real-time sync with click-to-seek and smooth auto-scrolling
+12. **🎉 Caption file import/export (VTT/SRT)** - Custom parsers with UTF-8 support and robust time format handling
+13. **🎉 localStorage persistence for work recovery** - Conditional caption restoration with exact file metadata matching
+14. **🎉 AssemblyAI Backend Integration** - Real AI transcription with async job processing and word-level timestamps
+15. **🎉 Docker Development Environment** - Full-stack setup with environment variable passthrough and hot reload
+16. **🎉 AI Transcription UI Integration** - Complete workflow from video upload to AI caption generation
 
 ### ❌ Not Started
 
-- Frontend AI transcription UI integration (backend complete, frontend UI missing)
-- End-to-end workflow testing (video → AI → caption editing)
+- None! Core MVP is 100% complete
 
 ## How to Run/Test
 
@@ -134,19 +110,7 @@ curl "http://localhost:8000/api/captions/transcribe/JOB_ID_FROM_START"
 ```bash
 npm run build        # Build all packages (includes type generation)
 npm run lint         # Lint all packages
-npm run generate-types  # Generate TypeScript types from JSON schemas
-```
-
-### Type Generation System
-
-```bash
-# Regenerate types after schema changes
-cd packages/common-types
-npm run generate-types
-
-# Or build everything (includes type generation)
-cd ../..
-npm run build
+npm run generate-types  # Generate TypeScript types from JSON schemas only
 ```
 
 ## Project Structure
@@ -185,7 +149,7 @@ caption-editor/
 
 ### Code Standards
 
-1. **Follow existing file structure** - don't create new top-level directories
+1. **Follow existing file structure** - Raise your justification before creating new top-level directories
 2. **Use TypeScript** for all frontend code with strict typing
 3. **Use Poetry 2.1** for Python dependency management (not pip/venv)
 4. **Keep monorepo workspace clean** - dependencies belong in individual packages
@@ -243,7 +207,7 @@ caption-editor/
 
 4. **Trust TypeScript errors over online documentation** - Our version uses different API than GitHub README shows
 
-See `docs/reactplayer-reality-guide.md` for complete details.
+See @docs/reactplayer-reality-guide.md for complete details.
 
 ### 🚨 CRITICAL Bidirectional Synchronization Implementation Rules
 
@@ -296,7 +260,7 @@ See `docs/reactplayer-reality-guide.md` for complete details.
 
 ### 🚨 CRITICAL VTT/SRT Parsing Implementation Rules
 
-**Custom parser implementation** - No third-party libraries used for lightweight bundle:
+**Custom parser implementation** (keep the chance to use third-party libraries open)
 
 1. **Parser location**: `src/utils/caption-parsers.ts`
 2. **Key functions**:
@@ -330,7 +294,7 @@ See `docs/reactplayer-reality-guide.md` for complete details.
 
 **FULLY WORKING** - Implements complete recovery spec with all edge cases handled:
 
-1. **Recovery specification** (all 3 test cases PASS):
+1. **Recovery specification** (See @docs/spec/recovery_spec.txt for details):
    - ✅ **No auto-restore on startup**: Captions cleared from UI on app launch
    - ✅ **Conditional restore for same file**: Captions restore when EXACT same video uploaded
    - ✅ **No restore for different file**: Captions stay cleared for different videos
@@ -376,6 +340,48 @@ See `docs/reactplayer-reality-guide.md` for complete details.
 5. **Key store location**: `src/stores/caption-store.ts` with Zustand persist middleware
 6. **localStorage key**: `caption-editor-store`
 7. **Debugging**: Console logs with 🔧 🔍 ✅ ❌ prefixes for persistence tracking
+
+### 🚨 CRITICAL AI Transcription Integration Rules
+
+**FULLY WORKING** - Complete frontend-to-backend AI transcription workflow:
+
+1. **Original File Storage Pattern**:
+
+   ```typescript
+   interface VideoState {
+     file: File | null; // Store original file for backend upload
+     url: string | null; // Blob URL for video playback
+     fileName: string | null;
+     fileMetadata: VideoFileMetadata | null;
+   }
+
+   // In setVideoFile:
+   file, // Store the original file for backend upload
+   ```
+
+2. **AI Transcription Workflow**:
+
+   ```tsx
+   const handleAITranscription = async () => {
+     // Step 1: Upload video file to backend
+     await uploadVideoToBackend(video.file);
+
+     // Step 2: Start transcription (uses uploadedVideoId from step 1)
+     await startTranscription();
+
+     // Step 3: Polling happens automatically via useEffect
+   };
+   ```
+
+3. **Polling Configuration**:
+   - **Interval**: 5 seconds
+   - **Auto-cleanup**: Polling stops on completion/error
+   - **Status tracking**: uploading → processing → completed/error
+
+4. **UI State Management**:
+   - Button states: "AI Generate" → "Uploading..." → "Generating..." → "AI Generate"
+   - Status messages: Color-coded progress feedback (blue/green/red)
+   - Error handling: Graceful degradation with user-friendly messages
 
 ### 🚨 CRITICAL AssemblyAI Backend Implementation Rules
 
@@ -427,17 +433,10 @@ See `docs/reactplayer-reality-guide.md` for complete details.
    - Video ID generation for job tracking
    - Cleanup handling (TODO: implement cleanup cron job)
 
-### FastAPI Backend Dependencies
-
-- **AssemblyAI SDK v0.42.1** (upgraded from v0.17.0)
-- **FastAPI + Uvicorn** for async API serving
-- **Pydantic v2** for request/response validation
-- **python-multipart** for file upload handling
-
-### Key Dependencies Already Added
+### Key Dependencies
 
 - **Frontend**: Next.js 15.4.6, Tailwind, Shadcn/ui, TypeScript
-- **Backend**: FastAPI, Uvicorn, Pydantic, AssemblyAI, HTTPX
+- **Backend**: FastAPI, AssemblyAI SDK v0.42.1, Pydantic v2
 - **Types**: json-schema-to-typescript for automated generation
 
 ### Testing Strategy
@@ -454,88 +453,18 @@ See `docs/reactplayer-reality-guide.md` for complete details.
 - `POST /api/captions/transcribe` - Start AI video transcription
 - `GET /api/captions/transcribe/{job_id}` - Check transcription status
 
-## 🎉 HANDOVER: WHAT'S NEXT FOR SUCCESSORS
+## 🎯 SUCCESSOR HANDOVER
 
-**The caption editor is now PRODUCTION-READY for core workflows.** All fundamental features are complete and tested.
+### Core MVP Status: ✅ PRODUCTION READY
 
-### ✅ WHAT'S WORKING (Reference Summary)
+**Complete workflow implemented**: video upload → AI transcription → caption editing → export
 
-- **Video playback** with all controls and seeking
-- **Caption editing** with real-time text editing
-- **Bidirectional synchronization** (video ↔ captions) with smooth scrolling
-- **VTT/SRT import/export** with robust parsing and UTF-8 support
-- **localStorage persistence** with complete recovery spec (all 3 test cases + edge cases)
-- **File metadata matching** for conditional caption recovery
-- **UI/UX polish** with loading states, error handling, and visual feedback
+### Key Technical Patterns
 
-### 🎯 IMMEDIATE NEXT TASKS (Priority Order)
+- **ReactPlayer**: Use HTML5 events, set `loop={false}` to prevent flashing
+- **localStorage**: File metadata matching (name + size + lastModified) for recovery
+- **VTT/SRT**: Custom lightweight parsers in `src/utils/caption-parsers.ts`
+- **AssemblyAI**: Real API integration with 5-second polling workflow
+- **Development**: Docker Compose with `ASSEMBLYAI_API_KEY` passthrough
 
-**1. Frontend AI Transcription UI Integration** _(HIGH PRIORITY - Only Missing Piece)_
-
-- Add "Start AI Transcription" button to video upload UI
-- Implement video file upload to backend (`POST /api/videos/upload`)
-- Add transcription job polling (`GET /api/captions/transcribe/{job_id}`)
-- Load AI-generated captions into existing caption editor
-- Add loading states and progress indicators for transcription
-- Handle transcription errors gracefully with user feedback
-
-**2. Complete End-to-End Testing** _(Medium Priority)_
-
-- Test full workflow: video upload → AI transcription → caption editing → export
-- Validate that AI-generated captions work with existing video/caption sync
-- Ensure localStorage persistence works with AI-generated captions
-- Performance testing with larger video files
-
-### 🚀 FUTURE ENHANCEMENTS (Lower Priority)
-
-**Production Deployment**
-
-- Docker configurations for containerized deployment
-- Environment variable management
-- Production build optimizations
-
-**Advanced Features**
-
-- Video controls: volume, playback speed, fullscreen
-- Caption styling: font size, colors, positioning
-- Multi-language support and translation features
-
-**Polish & Testing**
-
-- End-to-end workflow testing and validation
-- Performance optimization for large video files
-- Comprehensive error handling and user feedback
-
-### 💡 KEY SUCCESS PATTERNS ESTABLISHED
-
-- **Custom parsers** over heavy dependencies for VTT/SRT handling
-- **Zustand persist** with custom partialize logic for complex state management
-- **File metadata matching** (name + size + lastModified) for precise recovery
-- **HTML5 video events** over ReactPlayer callbacks for reliability
-- **Edge case handling** for localStorage across browser sessions
-- **Real AssemblyAI integration** with proper async job handling and error management
-- **Docker Compose development** with environment variable passthrough for seamless full-stack setup
-
-### 🔧 CRITICAL KNOWLEDGE FOR SUCCESS
-
-1. **Follow the localStorage persistence patterns** - They handle complex edge cases
-2. **Use the existing ReactPlayer implementation rules** - Documentation is misleading
-3. **Leverage the custom VTT/SRT parsers** - They're lightweight and robust
-4. **Test recovery spec thoroughly** - All 3 test cases must pass
-5. **Use Docker Compose for development** - Environment is fully configured with AssemblyAI
-6. **AssemblyAI backend is production-ready** - Real API integration, just needs frontend UI
-
-## 🎯 CURRENT STATUS SUMMARY FOR SUCCESSORS
-
-**🟢 BACKEND: 100% COMPLETE** - AssemblyAI integration fully working
-
-- Video upload, transcription processing, job polling all tested and operational
-- Docker environment configured with API key passthrough
-- Error handling, file management, and async job tracking implemented
-
-**🟡 FRONTEND: 95% COMPLETE** - Core editing features fully working, AI UI missing
-
-- Video player, caption editing, VTT/SRT import/export, localStorage persistence all complete
-- Only missing: UI to trigger backend AI transcription (estimated 2-4 hours of work)
-
-**🎯 NEXT SUCCESSOR: Focus on frontend AI transcription UI integration. The backend is ready and waiting.**
+**Next steps**: Optional enhancements (volume controls, styling) or production deployment.

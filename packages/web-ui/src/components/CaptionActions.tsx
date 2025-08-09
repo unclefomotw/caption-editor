@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useCaptionStore } from '@/stores/caption-store';
 import { Button } from '@/components/ui/button';
 import { Upload, Download, FileText, Sparkles, Loader2 } from 'lucide-react';
@@ -14,7 +14,16 @@ import {
 } from '@/utils/caption-parsers';
 
 export function CaptionActions() {
-  const { video, captionFile, setCaptionFile } = useCaptionStore();
+  const {
+    video,
+    captionFile,
+    setCaptionFile,
+    transcription,
+    uploadVideoToBackend,
+    startTranscription,
+    checkTranscriptionStatus,
+    clearTranscriptionState,
+  } = useCaptionStore();
   const [isImporting, setIsImporting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
@@ -101,6 +110,76 @@ export function CaptionActions() {
     }
   }, [captionFile]);
 
+  // Handle AI transcription
+  const handleAITranscription = useCallback(async () => {
+    if (!video.file || !video.fileName) {
+      alert('Please upload a video first');
+      return;
+    }
+
+    try {
+      // Clear any previous transcription state
+      clearTranscriptionState();
+
+      console.log('🤖 Starting AI transcription for video:', video.fileName);
+
+      // Step 1: Upload video file to backend
+      await uploadVideoToBackend(video.file);
+
+      console.log('✅ Video uploaded to backend, starting transcription...');
+
+      // Step 2: Start transcription (uploadVideoToBackend sets uploadedVideoId)
+      await startTranscription();
+
+      console.log('✅ Transcription job started, polling for results...');
+    } catch (error) {
+      console.error('❌ Failed to start AI transcription:', error);
+      if (error instanceof Error) {
+        alert(`Failed to start transcription: ${error.message}`);
+      }
+    }
+  }, [
+    video.file,
+    video.fileName,
+    uploadVideoToBackend,
+    startTranscription,
+    clearTranscriptionState,
+  ]);
+
+  // Poll for transcription results when job is running
+  useEffect(() => {
+    let pollInterval: NodeJS.Timeout;
+
+    if (transcription.status === 'processing' && transcription.jobId) {
+      console.log(
+        '🔄 Starting transcription polling for job:',
+        transcription.jobId
+      );
+
+      pollInterval = setInterval(async () => {
+        try {
+          await checkTranscriptionStatus();
+        } catch (error) {
+          console.error('❌ Error checking transcription status:', error);
+          clearInterval(pollInterval);
+        }
+      }, 5000); // Poll every 5 seconds
+    }
+
+    return () => {
+      if (pollInterval) {
+        clearInterval(pollInterval);
+      }
+    };
+  }, [transcription.status, transcription.jobId, checkTranscriptionStatus]);
+
+  // Show success message when transcription completes
+  useEffect(() => {
+    if (transcription.status === 'completed') {
+      console.log('🎉 AI transcription completed successfully!');
+    }
+  }, [transcription.status]);
+
   const hasVideo = video.isReady;
   const hasCaptions = captionFile && captionFile.segments.length > 0;
 
@@ -126,15 +205,28 @@ export function CaptionActions() {
           Import VTT/SRT
         </Button>
 
-        {/* Generate AI Captions (placeholder) */}
+        {/* Generate AI Captions */}
         <Button
-          disabled
+          onClick={handleAITranscription}
+          disabled={
+            !hasVideo ||
+            transcription.status === 'uploading' ||
+            transcription.status === 'processing'
+          }
           variant="outline"
-          className="flex items-center justify-center opacity-50"
-          title="Coming soon - AI caption generation"
+          className="flex items-center justify-center"
         >
-          <Sparkles className="w-4 h-4 mr-2" />
-          AI Generate
+          {transcription.status === 'uploading' ||
+          transcription.status === 'processing' ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <Sparkles className="w-4 h-4 mr-2" />
+          )}
+          {transcription.status === 'uploading'
+            ? 'Uploading...'
+            : transcription.status === 'processing'
+              ? 'Generating...'
+              : 'AI Generate'}
         </Button>
 
         {/* Export VTT */}
@@ -171,13 +263,29 @@ export function CaptionActions() {
       {/* Status Messages */}
       <div className="mt-3 text-xs text-gray-500">
         {!hasVideo && <p>Upload a video to import captions</p>}
-        {hasVideo && !hasCaptions && (
+        {transcription.status === 'error' && transcription.error && (
+          <p className="text-red-600">❌ {transcription.error}</p>
+        )}
+        {transcription.status === 'uploading' && (
+          <p className="text-blue-600">🚀 Uploading video to AI service...</p>
+        )}
+        {transcription.status === 'processing' && (
+          <p className="text-blue-600">
+            🤖 AI is generating captions... This may take a moment.
+          </p>
+        )}
+        {transcription.status === 'completed' && (
+          <p className="text-green-600">
+            ✅ AI transcription completed successfully!
+          </p>
+        )}
+        {hasVideo && !hasCaptions && transcription.status === 'idle' && (
           <p>Import caption files or generate with AI</p>
         )}
         {hasCaptions && (
           <p>
             {captionFile.segments.length} segments loaded •{' '}
-            {captionFile.format.toUpperCase()} format
+            {(captionFile.format || 'VTT').toUpperCase()} format
           </p>
         )}
       </div>

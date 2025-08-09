@@ -274,6 +274,7 @@ export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
             width="100%"
             height="auto"
             playing={video.isPlaying}
+            loop={false}
             onTimeUpdate={handleTimeUpdate}
             onDurationChange={handleDurationChange}
             onPlay={handlePlay}
