@@ -17,7 +17,6 @@ export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
 
   const {
     video,
-    setVideoUrl,
     setVideoDuration,
     setCurrentTime,
     setIsPlaying,

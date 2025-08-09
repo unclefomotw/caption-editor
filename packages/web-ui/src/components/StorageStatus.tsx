@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useCaptionStore } from '@/stores/caption-store';
-import { getStorageSizeInMB, clearStoredVideo } from '@/utils/persistence';
 import { Button } from '@/components/ui/button';
-import { HardDrive, Trash2, RefreshCw } from 'lucide-react';
+import { useCaptionStore } from '@/stores/caption-store';
+import { clearStoredVideo } from '@/utils/persistence';
+import { HardDrive, RefreshCw, Trash2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 export function StorageStatus() {
   const { video, captionFile, clearVideoStorage } = useCaptionStore();

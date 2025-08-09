@@ -1,14 +1,9 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import type {
-  CaptionSegment,
   CaptionFile,
+  CaptionSegment,
 } from '../../../common-types/src/types';
-import {
-  fileToStoredFile,
-  storedFileToBlob,
-  isStoredVideoValid,
-} from '../utils/persistence';
 import type { StoredVideoFile } from '../utils/persistence';
 
 interface VideoFileMetadata {
