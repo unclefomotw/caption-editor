@@ -1,0 +1,43 @@
+# Git and docs
+.git
+.gitignore
+README.md
+docs/
+DEVELOPMENT.md
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Node.js (will be installed in container)
+node_modules
+.npm
+
+# Build outputs
+.next
+dist
+build
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+.venv
+venv/
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Development artifacts
+*.log
+npm-debug.log*

@@ -1,0 +1,30 @@
+# Docker Compose for Caption Editor - Development Setup
+
+services:
+  # Next.js Frontend (uses root context for workspace dependencies)
+  frontend:
+    build:
+      context: .
+      dockerfile: packages/web-ui/Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./packages/web-ui:/app/packages/web-ui
+      - ./packages/common-types:/app/packages/common-types
+      - /app/node_modules
+      - /app/packages/web-ui/.next
+    environment:
+      - NODE_ENV=development
+    depends_on:
+      - backend
+
+  # FastAPI Backend (uses package context for self-contained Poetry project)
+  backend:
+    build: ./packages/api-server
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./packages/api-server:/app
+      - /app/.venv
+    environment:
+      - PYTHONPATH=/app/src
