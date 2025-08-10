@@ -5,6 +5,10 @@
  */
 export interface CaptionFile {
   /**
+   * Unique identifier for the caption file
+   */
+  id?: string;
+  /**
    * Array of caption segments
    */
   segments: CaptionSegment[];
@@ -15,7 +19,7 @@ export interface CaptionFile {
   /**
    * Caption file format
    */
-  format?: "vtt" | "srt" | "ass" | "sbv";
+  format?: 'vtt' | 'srt' | 'ass' | 'sbv';
   /**
    * Optional metadata about the caption file
    */

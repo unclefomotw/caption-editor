@@ -7,7 +7,7 @@
     "lint": "turbo run lint",
     "lint:api": "cd packages/api-server && ruff format src",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "generate-types": "node scripts/generate-types.js",
+    "generate-types": "node packages/common-types/scripts/generate-types.js",
     "docker:dev": "docker compose up --build",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f"

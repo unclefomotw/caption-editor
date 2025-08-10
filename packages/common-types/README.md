@@ -43,13 +43,13 @@ import {
   CaptionSegment,
   CaptionFile,
   TranscriptionRequest,
-} from "@caption-editor/common-types";
+} from '@caption-editor/common-types';
 
 const segment: CaptionSegment = {
-  id: "1",
+  id: '1',
   startTime: 0.0,
   endTime: 3.5,
-  text: "Hello world",
+  text: 'Hello world',
 };
 ```
 

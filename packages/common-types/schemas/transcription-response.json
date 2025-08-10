@@ -30,7 +30,7 @@
           "description": "Error code"
         },
         "message": {
-          "type": "string", 
+          "type": "string",
           "description": "Error message"
         },
         "details": {

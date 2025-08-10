@@ -2,7 +2,7 @@
 
 import os
 import tempfile
-from typing import List, Optional
+from typing import Annotated
 
 import assemblyai as aai
 from fastapi import APIRouter, File, HTTPException, UploadFile
@@ -32,25 +32,25 @@ class CaptionSegment(BaseModel):
 class CaptionFile(BaseModel):
     """Caption file model."""
 
-    segments: List[CaptionSegment]
-    language: Optional[str] = "en"
-    format: Optional[str] = "vtt"
+    segments: list[CaptionSegment]
+    language: str | None = "en"
+    format: str | None = "vtt"
 
 
 class TranscriptionRequest(BaseModel):
     """Request model for AI transcription."""
 
-    video_id: Optional[str] = None
-    video_url: Optional[str] = None
-    language: Optional[str] = "en"
+    video_id: str | None = None
+    video_url: str | None = None
+    language: str | None = "en"
 
 
 class TranscriptionResponse(BaseModel):
     """Response model for AI transcription."""
 
     status: str
-    job_id: Optional[str] = None
-    captions: Optional[CaptionFile] = None
+    job_id: str | None = None
+    captions: CaptionFile | None = None
     message: str
 
 
@@ -60,13 +60,14 @@ class VideoUploadResponse(BaseModel):
     video_id: str
     filename: str
     size: int
-    duration: Optional[float] = None
+    duration: float | None = None
     message: str
 
 
 @router.post("/videos/upload", response_model=VideoUploadResponse)
-async def upload_video(file: UploadFile = File(...)):
+async def upload_video(file: Annotated[UploadFile, File()]):
     """Upload a video file for processing."""
+
     # Validate file extension
     if not file.filename:
         raise HTTPException(status_code=400, detail="No filename provided")
@@ -119,18 +120,14 @@ async def transcribe_video(request: TranscriptionRequest):
         if request.video_id:
             # Use uploaded video file
             if request.video_id not in video_files:
-                raise HTTPException(
-                    status_code=404, detail=f"Video ID '{request.video_id}' not found"
-                )
+                raise HTTPException(status_code=404, detail=f"Video ID '{request.video_id}' not found")
             video_source = video_files[request.video_id]
         else:
             # Use video URL directly
             video_source = request.video_url
 
         # Configure transcription with word-level timestamps
-        config = aai.TranscriptionConfig(
-            language_detection=True, punctuate=True, format_text=True
-        )
+        config = aai.TranscriptionConfig(language_detection=True, punctuate=True, format_text=True)
 
         # Submit transcription job to AssemblyAI
         # Note: This is non-blocking, returns immediately with a job
@@ -152,18 +149,14 @@ async def transcribe_video(request: TranscriptionRequest):
         )
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Failed to start transcription: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to start transcription: {str(e)}") from e
 
 
 @router.get("/captions/transcribe/{job_id}", response_model=TranscriptionResponse)
 async def get_transcription_result(job_id: str):
     """Get transcription result by job ID."""
     if job_id not in transcription_jobs:
-        raise HTTPException(
-            status_code=404, detail=f"Transcription job '{job_id}' not found"
-        )
+        raise HTTPException(status_code=404, detail=f"Transcription job '{job_id}' not found")
 
     job_info = transcription_jobs[job_id]
     transcript = job_info["transcript"]
@@ -185,9 +178,7 @@ async def get_transcription_result(job_id: str):
 
                 for word in current_transcript.words:
                     if segment_start_time is None:
-                        segment_start_time = (
-                            word.start / 1000.0
-                        )  # Convert ms to seconds
+                        segment_start_time = word.start / 1000.0  # Convert ms to seconds
 
                     current_segment_words.append(word.text)
 

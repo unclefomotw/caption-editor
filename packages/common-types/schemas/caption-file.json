@@ -5,6 +5,10 @@
   "description": "A complete caption file containing multiple segments",
   "type": "object",
   "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique identifier for the caption file"
+    },
     "segments": {
       "type": "array",
       "description": "Array of caption segments",

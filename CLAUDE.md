@@ -263,7 +263,7 @@ See @docs/spec/editor_spec.txt for details
 
    ```tsx
    // When clicking caption segments
-   const videoElement = document.querySelector("video");
+   const videoElement = document.querySelector('video');
    if (videoElement) {
      videoElement.currentTime = segment.startTime;
    }
@@ -313,15 +313,15 @@ See @docs/spec/editor_spec.txt for details
 
    ```tsx
    // Import: File dialog → text() → parse → setCaptionFile()
-   const file = await openFileDialog(".vtt,.srt");
+   const file = await openFileDialog('.vtt,.srt');
    const content = await file.text();
-   const captionData = file.name.endsWith(".vtt")
+   const captionData = file.name.endsWith('.vtt')
      ? parseVTT(content)
      : parseSRT(content);
 
    // Export: captionFile → format → download
    const vttContent = exportToVTT(captionFile);
-   downloadFile(vttContent, "captions.vtt", "text/vtt");
+   downloadFile(vttContent, 'captions.vtt', 'text/vtt');
    ```
 
 ### 🚨 CRITICAL localStorage Persistence Implementation Rules
@@ -360,7 +360,7 @@ See @docs/spec/editor_spec.txt for details
 
    // Preserve localStorage during startup clearing
    if (state.captionsCleared && state.captionFile === null) {
-     const existingData = localStorage.getItem("caption-editor-store");
+     const existingData = localStorage.getItem('caption-editor-store');
      // Preserve both captionFile AND videoFileMetadata
    }
    ```

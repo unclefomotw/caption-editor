@@ -7,7 +7,7 @@ export interface HealthResponse {
   /**
    * Health status
    */
-  status: "healthy" | "unhealthy";
+  status: 'healthy' | 'unhealthy';
   /**
    * Health status message
    */

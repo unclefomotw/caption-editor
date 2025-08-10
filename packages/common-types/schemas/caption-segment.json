@@ -15,7 +15,7 @@
       "minimum": 0
     },
     "endTime": {
-      "type": "number", 
+      "type": "number",
       "description": "End time of the caption in seconds",
       "minimum": 0
     },

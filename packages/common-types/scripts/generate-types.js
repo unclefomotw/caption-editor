@@ -15,7 +15,7 @@ if (!fs.existsSync(OUTPUT_DIR)) {
 async function generateTypes() {
   try {
     console.log('🔧 Generating TypeScript types from JSON schemas...');
-    
+
     const schemaFiles = fs.readdirSync(SCHEMAS_DIR)
       .filter(file => file.endsWith('.json'));
 
@@ -25,9 +25,9 @@ async function generateTypes() {
       const schemaPath = path.join(SCHEMAS_DIR, schemaFile);
       const outputName = schemaFile.replace('.json', '.ts');
       const outputPath = path.join(OUTPUT_DIR, outputName);
-      
+
       console.log(`  📄 Processing ${schemaFile}...`);
-      
+
       // Generate TypeScript from JSON schema
       const ts = await compileFromFile(schemaPath, {
         bannerComment: `/* Generated from ${schemaFile} - DO NOT EDIT MANUALLY */`,
@@ -38,17 +38,17 @@ async function generateTypes() {
           singleQuote: false,
         }
       });
-      
+
       // Write TypeScript file
       fs.writeFileSync(outputPath, ts);
-      
+
       // Track generated types for index file
       const typeName = path.basename(outputName, '.ts');
       generatedTypes.push({
         file: outputName,
         typeName: pascalCase(typeName)
       });
-      
+
       console.log(`  ✅ Generated ${outputName}`);
     }
 
@@ -63,13 +63,13 @@ async function generateTypes() {
       }),
       ''
     ].join('\n');
-    
+
     const indexPath = path.join(OUTPUT_DIR, 'index.ts');
     fs.writeFileSync(indexPath, indexContent);
-    
+
     console.log('✅ Generated index.ts');
     console.log(`🎉 Successfully generated ${generatedTypes.length} TypeScript type files!`);
-    
+
   } catch (error) {
     console.error('❌ Error generating types:', error);
     process.exit(1);

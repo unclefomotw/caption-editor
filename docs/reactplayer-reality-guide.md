@@ -7,7 +7,7 @@ This document captures the real-world experience of implementing ReactPlayer v3.
 ## TL;DR - What Actually Works
 
 ```tsx
-import ReactPlayer from "react-player";
+import ReactPlayer from 'react-player';
 
 // ✅ CORRECT Implementation for react-player@3.3.1
 <ReactPlayer
@@ -28,7 +28,7 @@ const handleTimeUpdate = useCallback(
     const currentTime = target.currentTime;
     setCurrentTime(currentTime);
   },
-  [setCurrentTime],
+  [setCurrentTime]
 );
 
 const handleDurationChange = useCallback(
@@ -37,7 +37,7 @@ const handleDurationChange = useCallback(
     const duration = target.duration;
     setVideoDuration(duration);
   },
-  [setVideoDuration],
+  [setVideoDuration]
 );
 
 // ✅ CORRECT Seeking
@@ -201,8 +201,8 @@ cat node_modules/react-player/dist/types.d.ts
 ## Working Example (Complete)
 
 ```tsx
-import React, { useRef, useCallback, useState } from "react";
-import ReactPlayer from "react-player";
+import React, { useRef, useCallback, useState } from 'react';
+import ReactPlayer from 'react-player';
 
 export function VideoPlayer() {
   const playerRef = useRef<any>(null);
@@ -219,7 +219,7 @@ export function VideoPlayer() {
       const url = URL.createObjectURL(file);
       setVideoUrl(url);
     },
-    [],
+    []
   );
 
   const handleTimeUpdate = useCallback(
@@ -227,7 +227,7 @@ export function VideoPlayer() {
       const target = event.target as HTMLVideoElement;
       setCurrentTime(target.currentTime);
     },
-    [],
+    []
   );
 
   const handleDurationChange = useCallback(
@@ -237,7 +237,7 @@ export function VideoPlayer() {
         setDuration(target.duration);
       }
     },
-    [],
+    []
   );
 
   const handleSeek = useCallback((seekTime: number) => {
@@ -266,7 +266,7 @@ export function VideoPlayer() {
           />
           <div>
             <button onClick={() => setIsPlaying(!isPlaying)}>
-              {isPlaying ? "Pause" : "Play"}
+              {isPlaying ? 'Pause' : 'Play'}
             </button>
             <span>
               {Math.floor(currentTime)}s / {Math.floor(duration)}s
@@ -322,8 +322,8 @@ export function VideoPlayer() {
 useEffect(() => {
   if (videoUrl) {
     setTimeout(() => {
-      const video = document.querySelector("video");
-      console.log("Video element:", {
+      const video = document.querySelector('video');
+      console.log('Video element:', {
         src: video?.src,
         duration: video?.duration,
         readyState: video?.readyState,

@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from . import __version__
-from .routers import health, captions
+from .routers import captions, health
 
 app = FastAPI(
     title="Caption Editor API",

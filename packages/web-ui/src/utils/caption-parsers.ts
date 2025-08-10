@@ -108,12 +108,14 @@ export const parseVTT = (content: string, fileName?: string): CaptionFile => {
 
   return {
     id: `vtt_${Date.now()}`,
-    title: fileName ? `Imported from ${fileName}` : 'Imported VTT Captions',
     language: 'en', // TODO: Could be detected from VTT metadata
     format: 'vtt',
     segments: segments.sort((a, b) => a.startTime - b.startTime),
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    metadata: {
+      title: fileName ? `Imported from ${fileName}` : 'Imported VTT Captions',
+      createdAt: new Date().toISOString(),
+      modifiedAt: new Date().toISOString(),
+    },
   };
 };
 
@@ -181,12 +183,14 @@ export const parseSRT = (content: string, fileName?: string): CaptionFile => {
 
   return {
     id: `srt_${Date.now()}`,
-    title: fileName ? `Imported from ${fileName}` : 'Imported SRT Captions',
     language: 'en',
     format: 'srt',
     segments: segments.sort((a, b) => a.startTime - b.startTime),
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    metadata: {
+      title: fileName ? `Imported from ${fileName}` : 'Imported SRT Captions',
+      createdAt: new Date().toISOString(),
+      modifiedAt: new Date().toISOString(),
+    },
   };
 };
 

@@ -136,9 +136,9 @@ A central state management system (like Zustand or Redux Toolkit) will orchestra
 This simplified pseudo-code example demonstrates how `react-player` could be used:
 
 ```jsx
-import React, { useState, useRef } from "react";
-import ReactPlayer from "react-player";
-import CaptionEditor from "./CaptionEditor";
+import React, { useState, useRef } from 'react';
+import ReactPlayer from 'react-player';
+import CaptionEditor from './CaptionEditor';
 
 function VideoEditor() {
   const playerRef = useRef(null);
@@ -154,7 +154,7 @@ function VideoEditor() {
 
   const handleCaptionSegmentClick = (startTime) => {
     if (playerRef.current) {
-      playerRef.current.seekTo(startTime, "seconds");
+      playerRef.current.seekTo(startTime, 'seconds');
       setIsPlaying(true);
     }
   };
