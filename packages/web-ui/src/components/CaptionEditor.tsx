@@ -13,8 +13,8 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type {
-  CaptionSegment,
   CaptionFile,
+  CaptionSegment,
 } from '../../../common-types/src/types';
 
 interface CaptionEditorProps {
@@ -614,6 +614,23 @@ export function CaptionEditor({ className }: CaptionEditorProps) {
                       </button>
                     )}
                   <div className="flex items-start justify-between">
+                    {/* Delete button on the left */}
+                    {!isEditing && (
+                      <div className="flex flex-col justify-center mr-4 mt-3 ml-0">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteSegment(segment.id);
+                          }}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    )}
+
                     {/* Timing and Content */}
                     <div className="flex-1 mr-4">
                       <div className="flex items-center space-x-2 text-sm text-gray-600 mb-2">
@@ -834,18 +851,6 @@ export function CaptionEditor({ className }: CaptionEditorProps) {
                           }
                         >
                           <Scissors className="w-3 h-3" />
-                        </Button>
-
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            deleteSegment(segment.id);
-                          }}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="w-3 h-3" />
                         </Button>
                       </div>
                     )}
