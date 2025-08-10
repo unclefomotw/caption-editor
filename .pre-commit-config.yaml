@@ -1,0 +1,68 @@
+# Pre-commit hooks configuration for Caption Editor monorepo
+# 2025 best practices for JavaScript/TypeScript + Python
+repos:
+  # Common hooks for all file types
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: mixed-line-ending
+        args: ['--fix=lf']
+
+  # Security: Prevent secrets from being committed
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.28.0
+    hooks:
+      - id: gitleaks
+
+  # JavaScript/TypeScript linting and formatting (Next.js frontend)
+  - repo: https://github.com/pre-commit/mirrors-eslint
+    rev: v9.33.0
+    hooks:
+      - id: eslint
+        files: ^packages/web-ui/.*\.(js|jsx|ts|tsx)$
+        additional_dependencies:
+          - eslint@9.33.0
+          - eslint-config-next@15.4.6
+          - eslint-config-prettier@10.1.8
+          - "@eslint/eslintrc@3.3.1"
+          - typescript@5.9.2
+
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v4.0.0-alpha.8
+    hooks:
+      - id: prettier
+        files: ^packages/web-ui/.*\.(js|jsx|ts|tsx|json|md)$
+
+  # Python linting and formatting with Ruff (ultra-fast, replaces Black + Flake8)
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.12.8
+    hooks:
+      # Linting
+      - id: ruff
+        files: ^packages/api-server/
+        args: [--fix]
+      # Formatting
+      - id: ruff-format
+        files: ^packages/api-server/
+
+  # TypeScript type checking for frontend
+  - repo: local
+    hooks:
+      - id: typescript-check
+        name: TypeScript Check
+        entry: bash -c 'cd packages/web-ui && npx tsc --noEmit'
+        language: system
+        files: ^packages/web-ui/.*\.(ts|tsx)$
+        pass_filenames: false
+
+# Global configuration
+fail_fast: false
+default_stages: [pre-commit]
