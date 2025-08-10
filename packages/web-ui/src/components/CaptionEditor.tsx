@@ -756,22 +756,6 @@ export function CaptionEditor({ className }: CaptionEditorProps) {
                         <span>
                           {(segment.endTime - segment.startTime).toFixed(1)}s
                         </span>
-                        {segment.confidence && (
-                          <>
-                            <span className="text-gray-400">•</span>
-                            <span
-                              className={
-                                segment.confidence > 0.8
-                                  ? 'text-green-600'
-                                  : segment.confidence > 0.6
-                                    ? 'text-yellow-600'
-                                    : 'text-red-600'
-                              }
-                            >
-                              {Math.round(segment.confidence * 100)}%
-                            </span>
-                          </>
-                        )}
                         {segment.speaker && (
                           <>
                             <span className="text-gray-400">•</span>
