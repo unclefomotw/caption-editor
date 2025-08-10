@@ -34,7 +34,6 @@ interface CaptionStore {
   selectedSegmentId: string | null;
 
   // UI state
-  isEditing: boolean;
   lastSaved: Date | null;
 
   // Recovery control
@@ -72,7 +71,6 @@ interface CaptionStore {
   selectSegmentByTime: (time: number) => void;
 
   // Edit actions
-  setIsEditing: (editing: boolean) => void;
   markSaved: () => void;
 
   // API actions
@@ -111,7 +109,6 @@ export const useCaptionStore = create<CaptionStore>()(
         video: initialVideoState,
         captionFile: null, // Will be set by clearCaptionsOnStartup if needed
         selectedSegmentId: null,
-        isEditing: false,
         lastSaved: null,
         captionsCleared: false,
 
@@ -347,7 +344,6 @@ export const useCaptionStore = create<CaptionStore>()(
                   segments,
                   updatedAt: new Date().toISOString(),
                 },
-                isEditing: true,
                 lastSaved: new Date(),
                 captionsCleared: false, // Enable persistence for edits
               };
@@ -371,7 +367,6 @@ export const useCaptionStore = create<CaptionStore>()(
                   segments,
                   updatedAt: new Date().toISOString(),
                 },
-                isEditing: true,
                 lastSaved: new Date(),
                 captionsCleared: false, // Enable persistence for edits
               };
@@ -399,7 +394,6 @@ export const useCaptionStore = create<CaptionStore>()(
                   state.selectedSegmentId === id
                     ? null
                     : state.selectedSegmentId,
-                isEditing: true,
                 lastSaved: new Date(),
                 captionsCleared: false, // Enable persistence for edits
               };
@@ -443,7 +437,6 @@ export const useCaptionStore = create<CaptionStore>()(
                   segments,
                   updatedAt: new Date().toISOString(),
                 },
-                isEditing: true,
                 lastSaved: new Date(),
                 captionsCleared: false, // Enable persistence for edits
               };
@@ -499,7 +492,6 @@ export const useCaptionStore = create<CaptionStore>()(
                   updatedAt: new Date().toISOString(),
                 },
                 selectedSegmentId: mergedSegment.id,
-                isEditing: true,
                 lastSaved: new Date(),
                 captionsCleared: false, // Enable persistence for edits
               };
@@ -530,10 +522,8 @@ export const useCaptionStore = create<CaptionStore>()(
           ),
 
         // Edit actions
-        setIsEditing: (isEditing) => set({ isEditing }, false, 'setIsEditing'),
 
-        markSaved: () =>
-          set({ lastSaved: new Date(), isEditing: false }, false, 'markSaved'),
+        markSaved: () => set({ lastSaved: new Date() }, false, 'markSaved'),
 
         // Utility actions
         reset: () =>
@@ -542,7 +532,6 @@ export const useCaptionStore = create<CaptionStore>()(
               video: initialVideoState,
               captionFile: null,
               selectedSegmentId: null,
-              isEditing: false,
               lastSaved: null,
             },
             false,

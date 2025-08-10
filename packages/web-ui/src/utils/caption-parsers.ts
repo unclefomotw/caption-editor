@@ -126,8 +126,6 @@ export const parseSRT = (content: string, fileName?: string): CaptionFile => {
   const lines = cleanContent.split('\n').map((line) => line.trim());
   const segments: CaptionSegment[] = [];
 
-  console.log('🔍 SRT Parser - Total lines:', lines.length);
-
   let currentSegment: Partial<CaptionSegment> | null = null;
   let expectingNumber = true;
   let expectingTiming = false;
@@ -150,7 +148,6 @@ export const parseSRT = (content: string, fileName?: string): CaptionFile => {
 
     // Expecting sequence number
     if (expectingNumber && /^\d+$/.test(line)) {
-      console.log('📝 Found segment number:', line);
       currentSegment = {
         id: `srt_segment_${line}`,
         text: '',
@@ -162,7 +159,6 @@ export const parseSRT = (content: string, fileName?: string): CaptionFile => {
     else if (expectingTiming && line.includes('-->')) {
       const timingMatch = line.match(/([\d:.,]+)\s*-->\s*([\d:.,]+)/);
       if (timingMatch && currentSegment) {
-        console.log('⏰ Found timing:', timingMatch[1], '-->', timingMatch[2]);
         currentSegment.startTime = parseTimeToSeconds(timingMatch[1]);
         currentSegment.endTime = parseTimeToSeconds(timingMatch[2]);
         expectingTiming = false;
@@ -172,7 +168,6 @@ export const parseSRT = (content: string, fileName?: string): CaptionFile => {
     // Expecting text content
     else if (expectingText && currentSegment) {
       // Accumulate text (handle multi-line captions)
-      console.log('📄 Found text:', line);
       currentSegment.text = currentSegment.text
         ? `${currentSegment.text} ${line}`
         : line;
@@ -183,8 +178,6 @@ export const parseSRT = (content: string, fileName?: string): CaptionFile => {
   if (currentSegment && currentSegment.text) {
     segments.push(currentSegment as CaptionSegment);
   }
-
-  console.log('✅ SRT Parser - Found segments:', segments.length);
 
   return {
     id: `srt_${Date.now()}`,

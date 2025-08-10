@@ -282,12 +282,6 @@ export function CaptionActions() {
         {hasVideo && !hasCaptions && transcription.status === 'idle' && (
           <p>Import caption files or generate with AI</p>
         )}
-        {hasCaptions && (
-          <p>
-            {captionFile.segments.length} segments loaded •{' '}
-            {(captionFile.format || 'VTT').toUpperCase()} format
-          </p>
-        )}
       </div>
     </div>
   );

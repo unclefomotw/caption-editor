@@ -23,7 +23,6 @@ export function CaptionEditor({ className }: CaptionEditorProps) {
     captionFile,
     selectedSegmentId,
     video,
-    isEditing,
     addSegment,
     updateSegment,
     deleteSegment,
@@ -840,16 +839,6 @@ export function CaptionEditor({ className }: CaptionEditorProps) {
           </div>
         )}
       </div>
-
-      {/* Footer */}
-      {isEditing && (
-        <div className="p-4 border-t bg-yellow-50">
-          <div className="flex items-center text-sm text-yellow-800">
-            <Edit3 className="w-4 h-4 mr-2" />
-            You have unsaved changes. Remember to save your work!
-          </div>
-        </div>
-      )}
     </div>
   );
 }
