@@ -31,6 +31,13 @@ export function CaptionEditor({ className }: CaptionEditorProps) {
 
   const [editingSegmentId, setEditingSegmentId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState('');
+  const [editingTimestampId, setEditingTimestampId] = useState<string | null>(
+    null
+  );
+  const [editingTimestampType, setEditingTimestampType] = useState<
+    'start' | 'end' | null
+  >(null);
+  const [editingTimestampValue, setEditingTimestampValue] = useState('');
 
   // Format time for display
   const formatTime = (seconds: number) => {
@@ -108,6 +115,131 @@ export function CaptionEditor({ className }: CaptionEditorProps) {
     setEditingText('');
   }, []);
 
+  // Parse time string into seconds
+  const parseTime = (timeString: string): number | null => {
+    const parts = timeString.split(':');
+    if (parts.length < 2 || parts.length > 3) return null;
+
+    let hours = 0,
+      minutes = 0,
+      seconds = 0;
+
+    if (parts.length === 3) {
+      hours = parseInt(parts[0], 10);
+      minutes = parseInt(parts[1], 10);
+      seconds = parseFloat(parts[2]);
+    } else {
+      minutes = parseInt(parts[0], 10);
+      seconds = parseFloat(parts[1]);
+    }
+
+    if (isNaN(hours) || isNaN(minutes) || isNaN(seconds)) return null;
+    if (
+      hours < 0 ||
+      minutes < 0 ||
+      minutes >= 60 ||
+      seconds < 0 ||
+      seconds >= 60
+    )
+      return null;
+
+    return hours * 3600 + minutes * 60 + seconds;
+  };
+
+  // Handle timestamp edit start
+  const handleEditTimestamp = useCallback(
+    (segmentId: string, type: 'start' | 'end', currentValue: number) => {
+      setEditingTimestampId(segmentId);
+      setEditingTimestampType(type);
+      setEditingTimestampValue(formatTime(currentValue));
+    },
+    []
+  );
+
+  // Handle timestamp save
+  const handleSaveTimestamp = useCallback(() => {
+    if (!editingTimestampId || !editingTimestampType) return;
+
+    const parsedTime = parseTime(editingTimestampValue);
+    if (parsedTime === null) {
+      alert('Invalid time format. Use MM:SS.MS or HH:MM:SS.MS');
+      return;
+    }
+
+    const segment = captionFile?.segments.find(
+      (s) => s.id === editingTimestampId
+    );
+    if (!segment) return;
+
+    // Validate time constraints
+    if (editingTimestampType === 'start') {
+      if (parsedTime >= segment.endTime) {
+        alert('Start time must be less than end time');
+        return;
+      }
+      updateSegment(editingTimestampId, { startTime: parsedTime });
+    } else {
+      if (parsedTime <= segment.startTime) {
+        alert('End time must be greater than start time');
+        return;
+      }
+      updateSegment(editingTimestampId, { endTime: parsedTime });
+    }
+
+    setEditingTimestampId(null);
+    setEditingTimestampType(null);
+    setEditingTimestampValue('');
+  }, [
+    editingTimestampId,
+    editingTimestampType,
+    editingTimestampValue,
+    captionFile,
+    updateSegment,
+  ]);
+
+  // Handle timestamp cancel
+  const handleCancelTimestamp = useCallback(() => {
+    setEditingTimestampId(null);
+    setEditingTimestampType(null);
+    setEditingTimestampValue('');
+  }, []);
+
+  // Check if a segment has overlap with adjacent segments
+  const getSegmentOverlapInfo = useCallback(
+    (segment: CaptionSegment, segments: CaptionSegment[]) => {
+      const sortedSegments = segments.sort((a, b) => a.startTime - b.startTime);
+      const currentIndex = sortedSegments.findIndex((s) => s.id === segment.id);
+
+      const overlaps = {
+        hasStartOverlap: false,
+        hasEndOverlap: false,
+        overlapsPrevious: false,
+        overlapsNext: false,
+      };
+
+      // Check overlap with previous segment
+      if (currentIndex > 0) {
+        const previousSegment = sortedSegments[currentIndex - 1];
+        if (previousSegment.endTime > segment.startTime) {
+          overlaps.hasStartOverlap = true;
+          overlaps.overlapsPrevious = true;
+        }
+      }
+
+      // Check overlap with next segment
+      if (currentIndex < sortedSegments.length - 1) {
+        const nextSegment = sortedSegments[currentIndex + 1];
+        if (segment.endTime > nextSegment.startTime) {
+          overlaps.hasEndOverlap = true;
+          overlaps.overlapsNext = true;
+        }
+      }
+
+      return overlaps;
+    },
+    []
+  );
+
   // Handle add new segment
   const handleAddSegment = useCallback(() => {
     const newSegment: CaptionSegment = {
@@ -175,11 +307,7 @@ export function CaptionEditor({ className }: CaptionEditorProps) {
       <div className="p-4 border-b bg-gray-50 rounded-t-lg">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold">Caption Editor</h2>
-            <p className="text-sm text-gray-600">
-              {segments.length} segments • {captionFile.language} •{' '}
-              {captionFile.format?.toUpperCase()}
-            </p>
+            <p className="text-sm text-gray-600">{segments.length} segments</p>
           </div>
           <div className="flex space-x-2">
             <Button onClick={handleAddSegment} size="sm" variant="outline">
@@ -206,6 +334,8 @@ export function CaptionEditor({ className }: CaptionEditorProps) {
             {segments.map((segment, index) => {
               const isSelected = segment.id === selectedSegmentId;
               const isEditing = segment.id === editingSegmentId;
+              const isEditingTimestamp = editingTimestampId === segment.id;
+              const overlapInfo = getSegmentOverlapInfo(segment, segments);
 
               return (
                 <div
@@ -216,16 +346,151 @@ export function CaptionEditor({ className }: CaptionEditorProps) {
                       ? 'bg-blue-100 border-l-4 border-blue-500 shadow-sm transform translate-x-1'
                       : 'hover:bg-gray-50 hover:translate-x-0.5'
                   }`}
-                  onClick={() => !isEditing && handleSegmentClick(segment)}
+                  onClick={() =>
+                    !isEditing &&
+                    !isEditingTimestamp &&
+                    handleSegmentClick(segment)
+                  }
                 >
                   <div className="flex items-start justify-between">
                     {/* Timing and Content */}
                     <div className="flex-1 mr-4">
                       <div className="flex items-center space-x-2 text-sm text-gray-600 mb-2">
-                        <span className="font-mono">
-                          {formatTime(segment.startTime)} →{' '}
-                          {formatTime(segment.endTime)}
-                        </span>
+                        <div className="font-mono flex items-center space-x-2">
+                          {isEditingTimestamp &&
+                          editingTimestampType === 'start' ? (
+                            <div className="flex items-center space-x-1">
+                              <input
+                                type="text"
+                                value={editingTimestampValue}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  // Only allow digits, colons, and periods
+                                  if (/^[0-9:.]*$/.test(value)) {
+                                    setEditingTimestampValue(value);
+                                  }
+                                }}
+                                className="w-20 px-1 py-0.5 border rounded text-xs"
+                                placeholder="0:00.00"
+                                autoFocus
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    handleSaveTimestamp();
+                                  } else if (e.key === 'Escape') {
+                                    handleCancelTimestamp();
+                                  }
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-5 w-5 p-0"
+                                onClick={handleSaveTimestamp}
+                              >
+                                <Save className="w-3 h-3" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-5 w-5 p-0"
+                                onClick={handleCancelTimestamp}
+                              >
+                                <X className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <span
+                              className={`cursor-pointer hover:bg-gray-200 px-1 rounded ${
+                                overlapInfo.hasStartOverlap
+                                  ? 'bg-red-100 text-red-700 border border-red-300'
+                                  : ''
+                              }`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditTimestamp(
+                                  segment.id,
+                                  'start',
+                                  segment.startTime
+                                );
+                              }}
+                              title={
+                                overlapInfo.hasStartOverlap
+                                  ? 'Warning: This segment overlaps with the previous segment'
+                                  : undefined
+                              }
+                            >
+                              {formatTime(segment.startTime)}
+                            </span>
+                          )}
+                          <span>→</span>
+                          {isEditingTimestamp &&
+                          editingTimestampType === 'end' ? (
+                            <div className="flex items-center space-x-1">
+                              <input
+                                type="text"
+                                value={editingTimestampValue}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  // Only allow digits, colons, and periods
+                                  if (/^[0-9:.]*$/.test(value)) {
+                                    setEditingTimestampValue(value);
+                                  }
+                                }}
+                                className="w-20 px-1 py-0.5 border rounded text-xs"
+                                placeholder="0:00.00"
+                                autoFocus
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    handleSaveTimestamp();
+                                  } else if (e.key === 'Escape') {
+                                    handleCancelTimestamp();
+                                  }
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-5 w-5 p-0"
+                                onClick={handleSaveTimestamp}
+                              >
+                                <Save className="w-3 h-3" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-5 w-5 p-0"
+                                onClick={handleCancelTimestamp}
+                              >
+                                <X className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <span
+                              className={`cursor-pointer hover:bg-gray-200 px-1 rounded ${
+                                overlapInfo.hasEndOverlap
+                                  ? 'bg-red-100 text-red-700 border border-red-300'
+                                  : ''
+                              }`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditTimestamp(
+                                  segment.id,
+                                  'end',
+                                  segment.endTime
+                                );
+                              }}
+                              title={
+                                overlapInfo.hasEndOverlap
+                                  ? 'Warning: This segment overlaps with the next segment'
+                                  : undefined
+                              }
+                            >
+                              {formatTime(segment.endTime)}
+                            </span>
+                          )}
+                        </div>
                         <span className="text-gray-400">•</span>
                         <span>
                           {(segment.endTime - segment.startTime).toFixed(1)}s

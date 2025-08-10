@@ -1,0 +1,11 @@
+*** Test Cases ***
+
+Edit timestamps of a segment
+    Given a caption segement in the editor
+    When clicking on the starting or ending timestamp of the segment
+    Then the user can edit the timestamp
+
+Warn overlapped segments
+    Given two adjacent caption segments in the editor
+    When the end timestamp of the first segment is larger than the start timestamp of the second segment
+    Then put visual warning on those timestamps
