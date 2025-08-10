@@ -54,10 +54,15 @@ Building a web application for editing video captions with AI-powered transcript
 14. **🎉 AssemblyAI Backend Integration** - Real AI transcription with async job processing and word-level timestamps
 15. **🎉 Docker Development Environment** - Full-stack setup with environment variable passthrough and hot reload
 16. **🎉 AI Transcription UI Integration** - Complete workflow from video upload to AI caption generation
+17. **🎉 Advanced Caption Editing** - Click-to-edit timestamps, hover-based segment addition, merge functionality, overlap warnings
 
-### ❌ Not Started
+### v0.1.1
 
-- None! Core MVP is 100% complete
+- Interactive timestamp editing with validation
+- Hover-based segment management (add before/after with smart positioning)
+- Segment merging with collision-free UI
+- Visual overlap detection between segments
+- Detailed editor specification (see @docs/spec/editor_spec.txt)
 
 ## How to Run/Test
 
@@ -207,7 +212,20 @@ caption-editor/
 
 4. **Trust TypeScript errors over online documentation** - Our version uses different API than GitHub README shows
 
+5. **Flashing bug** - set `loop={false}` to prevent flashing
+
 See @docs/reactplayer-reality-guide.md for complete details.
+
+### 🚨 CRITICAL Advanced Caption Editing Implementation Rules
+
+**MUST READ**: Interactive editing patterns implemented in v0.1.1:
+
+1. **Click-to-edit timestamps**: Direct timestamp editing with HH:MM:SS.mmm format validation
+2. **Hover-based segment controls**: Add before/after buttons with smart gap detection and positioning logic
+3. **Merge segments**: Combines adjacent segments with collision-free button positioning
+4. **Overlap warnings**: Visual indicators when segments have timing conflicts
+
+See @docs/spec/editor_spec.txt for details
 
 ### 🚨 CRITICAL Bidirectional Synchronization Implementation Rules
 
@@ -452,19 +470,3 @@ See @docs/reactplayer-reality-guide.md for complete details.
 - `POST /api/captions/upload` - Upload VTT/SRT caption files
 - `POST /api/captions/transcribe` - Start AI video transcription
 - `GET /api/captions/transcribe/{job_id}` - Check transcription status
-
-## 🎯 SUCCESSOR HANDOVER
-
-### Core MVP Status: ✅ PRODUCTION READY
-
-**Complete workflow implemented**: video upload → AI transcription → caption editing → export
-
-### Key Technical Patterns
-
-- **ReactPlayer**: Use HTML5 events, set `loop={false}` to prevent flashing
-- **localStorage**: File metadata matching (name + size + lastModified) for recovery
-- **VTT/SRT**: Custom lightweight parsers in `src/utils/caption-parsers.ts`
-- **AssemblyAI**: Real API integration with 5-second polling workflow
-- **Development**: Docker Compose with `ASSEMBLYAI_API_KEY` passthrough
-
-**Next steps**: Optional enhancements (volume controls, styling) or production deployment.
