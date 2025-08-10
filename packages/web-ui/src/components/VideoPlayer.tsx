@@ -24,6 +24,8 @@ export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
     selectSegmentByTime,
     setVideoFile,
     restoreVideoFromStorage,
+    captionFile,
+    selectedSegmentId,
   } = useCaptionStore();
 
   // Handle file upload with persistence
@@ -194,6 +196,12 @@ export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Get current active caption segment
+  const getCurrentCaption = () => {
+    if (!captionFile || !selectedSegmentId) return null;
+    return captionFile.segments.find(segment => segment.id === selectedSegmentId);
+  };
+
   // Clean up blob URL when component unmounts
   useEffect(() => {
     return () => {
@@ -354,6 +362,24 @@ export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Caption Display - Shows current subtitle/CC */}
+      {video.url && (
+        <div className="mt-2 min-h-[3rem] flex items-center justify-center bg-black/50 rounded-b-lg px-4 py-3">
+          {(() => {
+            const currentCaption = getCurrentCaption();
+            return currentCaption ? (
+              <p className="text-white text-center text-lg leading-relaxed font-medium drop-shadow-sm">
+                {currentCaption.text}
+              </p>
+            ) : (
+              <p className="text-gray-500 text-center text-sm italic">
+                {captionFile?.segments.length ? 'No caption for current time' : 'No captions loaded'}
+              </p>
+            );
+          })()}
         </div>
       )}
     </div>
