@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { useCaptionStore } from '@/stores/caption-store';
-import type { CaptionSegment } from '../../../common-types/src/types';
 import { Button } from '@/components/ui/button';
-import { Plus, Trash2, Scissors, Combine, Edit3, Save, X } from 'lucide-react';
+import { useCaptionStore } from '@/stores/caption-store';
+import { Combine, Edit3, Plus, Save, Scissors, Trash2, X } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { CaptionSegment } from '../../../common-types/src/types';
 
 interface CaptionEditorProps {
   className?: string;
@@ -191,7 +191,7 @@ export function CaptionEditor({ className }: CaptionEditorProps) {
       </div>
 
       {/* Segments List */}
-      <div ref={segmentListRef} className="max-h-96 overflow-y-auto">
+      <div ref={segmentListRef} className="max-h-[720px] overflow-y-auto">
         {segments.length === 0 ? (
           <div className="p-8 text-center text-gray-500">
             <div className="text-4xl mb-4">✨</div>

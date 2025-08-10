@@ -24,9 +24,6 @@ export default function Home() {
               <h1 className="text-2xl font-bold text-gray-900">
                 Caption Editor
               </h1>
-              <p className="text-sm text-gray-600">
-                Upload a video and edit captions with AI assistance
-              </p>
             </div>
             <div className="text-sm text-gray-500">v0.1.0</div>
           </div>
@@ -53,20 +50,6 @@ export default function Home() {
           </div>
         </div>
       </main>
-
-      {/* Footer */}
-      <footer className="bg-white border-t mt-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-gray-500">
-              Built with Next.js, TypeScript, and ❤️
-            </div>
-            <div className="flex space-x-4 text-sm text-gray-400">
-              <span>Keyboard shortcuts: Space (play/pause), ← → (seek)</span>
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }
