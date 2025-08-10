@@ -68,7 +68,7 @@ export function StorageStatus() {
           </span>
           {captionFile && (
             <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
-              Captions auto-saved
+              Auto-saved for current video only - export to preserve
             </span>
           )}
         </div>
