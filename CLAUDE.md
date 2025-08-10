@@ -411,7 +411,6 @@ See @docs/spec/editor_spec.txt for details
    - `POST /api/captions/transcribe` - Start async AI transcription
    - `GET /api/captions/transcribe/{job_id}` - Poll transcription status
    - `GET /api/health` - System health check
-   - `POST /api/captions/upload` - Upload VTT/SRT files (legacy)
 
 2. **AssemblyAI Configuration** (tested with real API):
 
@@ -468,6 +467,5 @@ See @docs/spec/editor_spec.txt for details
 ## Current API Endpoints (Working)
 
 - `GET /api/health` - System health check
-- `POST /api/captions/upload` - Upload VTT/SRT caption files
 - `POST /api/captions/transcribe` - Start AI video transcription
 - `GET /api/captions/transcribe/{job_id}` - Check transcription status

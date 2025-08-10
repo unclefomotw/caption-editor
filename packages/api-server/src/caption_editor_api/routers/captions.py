@@ -103,25 +103,6 @@ async def upload_video(file: UploadFile = File(...)):
     )
 
 
-@router.post("/captions/upload", response_model=CaptionFile)
-async def upload_caption_file(file: UploadFile = File(...)):
-    """Upload and parse a caption file (VTT/SRT)."""
-    if not file.filename or not file.filename.endswith((".vtt", ".srt")):
-        raise HTTPException(
-            status_code=400, detail="Only VTT and SRT files are supported"
-        )
-
-    # TODO: Implement actual file parsing
-    # This is a placeholder response
-    return CaptionFile(
-        segments=[
-            CaptionSegment(
-                id="1", start_time=0.0, end_time=3.0, text="Sample caption segment"
-            )
-        ]
-    )
-
-
 @router.post("/captions/transcribe", response_model=TranscriptionResponse)
 async def transcribe_video(request: TranscriptionRequest):
     """Start AI transcription of a video."""
