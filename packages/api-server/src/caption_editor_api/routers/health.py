@@ -3,6 +3,8 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
 
+from .. import __version__
+
 router = APIRouter()
 
 
@@ -11,7 +13,7 @@ class HealthResponse(BaseModel):
 
     status: str
     message: str
-    version: str = "0.1.0"
+    version: str = __version__
 
 
 @router.get("/health", response_model=HealthResponse)

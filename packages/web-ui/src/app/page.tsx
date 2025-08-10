@@ -6,6 +6,7 @@ import { CaptionEditor } from '@/components/CaptionEditor';
 import { StorageStatus } from '@/components/StorageStatus';
 import { CaptionActions } from '@/components/CaptionActions';
 import { useCaptionStore } from '@/stores/caption-store';
+import packageJson from '../../package.json';
 
 export default function Home() {
   const { clearCaptionsOnStartup } = useCaptionStore();
@@ -25,7 +26,7 @@ export default function Home() {
                 Caption Editor
               </h1>
             </div>
-            <div className="text-sm text-gray-500">v0.1.0</div>
+            <div className="text-sm text-gray-500">v{packageJson.version}</div>
           </div>
         </div>
       </header>

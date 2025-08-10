@@ -1,6 +1,6 @@
 {
   "name": "@caption-editor/common-types",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Shared JSON schemas and TypeScript types for Caption Editor",
   "main": "index.js",
   "scripts": {

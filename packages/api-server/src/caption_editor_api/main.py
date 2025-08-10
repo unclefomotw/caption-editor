@@ -3,12 +3,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from . import __version__
 from .routers import health, captions
 
 app = FastAPI(
     title="Caption Editor API",
     description="API server for video caption editing application",
-    version="0.1.0",
+    version=__version__,
 )
 
 app.add_middleware(
