@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { useCaptionStore } from '@/stores/caption-store';
-import { Maximize2, Pause, Play, RotateCcw, Volume2 } from 'lucide-react';
+import { Pause, Play, RotateCcw, Volume2 } from 'lucide-react';
 import { useCallback, useEffect, useRef } from 'react';
 import ReactPlayer from 'react-player';
 
@@ -320,14 +320,6 @@ export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
                   className="text-white hover:bg-white/20"
                 >
                   <Volume2 className="w-4 h-4" />
-                </Button>
-
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-white hover:bg-white/20"
-                >
-                  <Maximize2 className="w-4 h-4" />
                 </Button>
               </div>
             </div>
