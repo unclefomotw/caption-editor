@@ -44,3 +44,13 @@ Set timestamps when adding a segment after a non-last segment
     Given a caption segment X, which is fore the segment Z
     When the user add a segment Y between X and Z
     Then the Y's start timestamp is X's end timestamp, and the Y's end timestamp is Z's start timestamp when Y's duration would be less or equal than 5 seconds, or is Y's start timestamp + 5 seconds if otherwise
+
+Merge two segments into one
+    Given two adjacent caption segments X and Y, X before Y
+    When the user hovers either of X or Y
+    Then show a "(up down arrow) Merge" button overlayed between X and Y that will merge them into one segment, resulting start timestamp being X's start, and end timestamp being Y's end, and the text are joined separated by a whitespace
+
+No collisions between segment hovering buttons
+    Given a caption segment
+    When the user hovers over it
+    Then if both "add" and "merge" button are displayed, they display side by side without overlapping

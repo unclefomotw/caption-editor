@@ -2,7 +2,15 @@
 
 import { Button } from '@/components/ui/button';
 import { useCaptionStore } from '@/stores/caption-store';
-import { Combine, Edit3, Plus, Save, Scissors, Trash2, X } from 'lucide-react';
+import {
+  ArrowUpDown,
+  Edit3,
+  Plus,
+  Save,
+  Scissors,
+  Trash2,
+  X,
+} from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CaptionSegment } from '../../../common-types/src/types';
 
@@ -39,6 +47,7 @@ export function CaptionEditor({ className }: CaptionEditorProps) {
   >(null);
   const [editingTimestampValue, setEditingTimestampValue] = useState('');
   const [hoveredSegmentId, setHoveredSegmentId] = useState<string | null>(null);
+  const [showMergeButton, setShowMergeButton] = useState<string | null>(null); // segment ID where merge button should appear
 
   // Format time for display
   const formatTime = (seconds: number) => {
@@ -274,6 +283,33 @@ export function CaptionEditor({ className }: CaptionEditorProps) {
     [mergeSegments]
   );
 
+  // Handle hover for merge button - show button when hovering on either segment
+  const handleSegmentHover = useCallback(
+    (segmentId: string, segments: CaptionSegment[]) => {
+      const currentIndex = segments.findIndex((s) => s.id === segmentId);
+      const hasNextSegment = currentIndex < segments.length - 1;
+      const hasPreviousSegment = currentIndex > 0;
+
+      // Show merge button between current and next segment
+      if (hasNextSegment) {
+        setShowMergeButton(segmentId);
+      }
+      // Or show merge button between previous and current segment
+      else if (hasPreviousSegment) {
+        const previousSegment = segments[currentIndex - 1];
+        setShowMergeButton(previousSegment.id);
+      }
+
+      setHoveredSegmentId(segmentId);
+    },
+    []
+  );
+
+  const handleSegmentLeave = useCallback(() => {
+    setShowMergeButton(null);
+    setHoveredSegmentId(null);
+  }, []);
+
   // Calculate timestamp for a new segment before or after a given segment
   const calculateNewSegmentTimestamp = useCallback(
     (targetSegment: CaptionSegment, position: 'before' | 'after') => {
@@ -464,8 +500,8 @@ export function CaptionEditor({ className }: CaptionEditorProps) {
                     !isEditingTimestamp &&
                     handleSegmentClick(segment)
                   }
-                  onMouseEnter={() => setHoveredSegmentId(segment.id)}
-                  onMouseLeave={() => setHoveredSegmentId(null)}
+                  onMouseEnter={() => handleSegmentHover(segment.id, segments)}
+                  onMouseLeave={handleSegmentLeave}
                 >
                   {/* Add Segment Buttons */}
                   {hoveredSegmentId === segment.id &&
@@ -495,14 +531,20 @@ export function CaptionEditor({ className }: CaptionEditorProps) {
                             }
                           >
                             <Plus className="w-3 h-3" />
-                            <span>Add Segment</span>
+                            <span>Add</span>
                           </button>
-                          {/* Add Segment After Button */}
+                          {/* Add Segment After Button - position to avoid collision with merge button */}
                           <button
-                            className={`absolute -bottom-0.5 left-1/2 transform -translate-x-1/2 px-3 py-1 rounded-full text-xs font-medium shadow-lg transition-all duration-200 flex items-center space-x-1 z-10 ${
+                            className={`absolute -bottom-0.5 px-3 py-1 rounded-full text-xs font-medium shadow-lg transition-all duration-200 flex items-center space-x-1 z-10 ${
                               afterDisabled
                                 ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
                                 : 'bg-blue-600 hover:bg-blue-700 text-white'
+                            } ${
+                              // Position based on whether merge button is showing
+                              showMergeButton === segment.id &&
+                              index < segments.length - 1
+                                ? 'left-1/4 transform -translate-x-1/2' // Move left when merge button shows
+                                : 'left-1/2 transform -translate-x-1/2' // Center when no merge button
                             }`}
                             onClick={(e) => {
                               e.stopPropagation();
@@ -518,11 +560,27 @@ export function CaptionEditor({ className }: CaptionEditorProps) {
                             }
                           >
                             <Plus className="w-3 h-3" />
-                            <span>Add Segment</span>
+                            <span>Add</span>
                           </button>
                         </>
                       );
                     })()}
+
+                  {/* Merge Button - appears between segments when hovering, positioned side by side with add button */}
+                  {showMergeButton === segment.id &&
+                    index < segments.length - 1 && (
+                      <button
+                        className="absolute -bottom-0.5 right-1/4 transform translate-x-1/2 px-3 py-1 rounded-full text-xs font-medium shadow-lg transition-all duration-200 flex items-center space-x-1 z-20 bg-purple-600 hover:bg-purple-700 text-white"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleMergeSegment(segment, segments);
+                        }}
+                        title="Merge with next segment"
+                      >
+                        <ArrowUpDown className="w-3 h-3" />
+                        <span>Merge</span>
+                      </button>
+                    )}
                   <div className="flex items-start justify-between">
                     {/* Timing and Content */}
                     <div className="flex-1 mr-4">
@@ -761,19 +819,6 @@ export function CaptionEditor({ className }: CaptionEditorProps) {
                         >
                           <Scissors className="w-3 h-3" />
                         </Button>
-
-                        {index < segments.length - 1 && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleMergeSegment(segment, segments);
-                            }}
-                          >
-                            <Combine className="w-3 h-3" />
-                          </Button>
-                        )}
 
                         <Button
                           size="sm"
