@@ -14,6 +14,7 @@ interface VideoPlayerProps {
 
 export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
   const playerRef = useRef<any>(null);
+  const isEndingRef = useRef(false);
 
   const {
     video,
@@ -31,20 +32,8 @@ export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
   // Handle file upload with persistence
   const handleFileUpload = useCallback(
     async (event: React.ChangeEvent<HTMLInputElement>) => {
-      console.log('🔥 FILE UPLOAD HANDLER CALLED!');
-      console.log('Files count:', event.target.files?.length || 0);
-
       const file = event.target.files?.[0];
-      if (!file) {
-        console.log('❌ No file selected');
-        return;
-      }
-
-      console.log('📁 File details:', {
-        name: file.name,
-        type: file.type,
-        size: file.size,
-      });
+      if (!file) return;
 
       // Validate file type
       const supportedTypes = [
@@ -54,17 +43,12 @@ export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
         'video/x-m4v',
       ];
       if (!supportedTypes.includes(file.type)) {
-        console.log('❌ Unsupported file type:', file.type);
         alert('Please select a supported video file (.mp4, .mov, .m4v)');
         return;
       }
 
-      console.log('📁 Loading video file. Caption edits will auto-save.');
       await setVideoFile(file);
-
-      console.log('✅ Video file stored! Calling onVideoLoad...');
       onVideoLoad?.(video.url || '');
-      console.log('🎬 File upload process complete!');
     },
     [setVideoFile, onVideoLoad, video.url]
   );
@@ -86,16 +70,10 @@ export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
     (event: React.SyntheticEvent<HTMLVideoElement>) => {
       const target = event.target as HTMLVideoElement;
       const duration = target.duration;
-      console.log('HTML5 onDurationChange - duration:', duration);
 
       if (duration && duration > 0 && !isNaN(duration)) {
         setVideoDuration(duration);
         setVideoReady(true);
-        console.log('✅ Duration set successfully:', duration);
-
-        // Sample caption auto-generation removed - bidirectional sync is tested and working
-        // Users will import caption files or use AI generation instead
-        console.log('✅ Video ready for caption editing');
       }
     },
     [setVideoDuration, setVideoReady]
@@ -103,44 +81,34 @@ export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
 
   // Auto-restore video from storage on component mount
   useEffect(() => {
-    const restoreVideo = async () => {
-      const restored = await restoreVideoFromStorage();
-      if (restored) {
-        console.log('✅ Video restored from localStorage');
-      }
-    };
-
-    restoreVideo();
+    restoreVideoFromStorage();
   }, [restoreVideoFromStorage]);
-
-  // Add debugging effect to see what's happening with video element
-  useEffect(() => {
-    console.log('🔍 VideoPlayer effect - checking video element state...');
-    if (video.url) {
-      setTimeout(() => {
-        const videoElement = document.querySelector('video');
-        if (videoElement) {
-          console.log('📊 Video element properties:', {
-            src: videoElement.src,
-            duration: videoElement.duration,
-            readyState: videoElement.readyState,
-            networkState: videoElement.networkState,
-            error: videoElement.error,
-          });
-        } else {
-          console.log('❌ No video element found in DOM');
-        }
-      }, 1000);
-    }
-  }, [video.url]);
 
   // Handle when video starts playing
   const handlePlay = useCallback(() => {
-    console.log('ReactPlayer onPlay called');
-    setIsPlaying(true);
+    if (!isEndingRef.current && !video.isPlaying) {
+      setIsPlaying(true);
+    }
+  }, [setIsPlaying, video.isPlaying]);
 
-    // Duration should be handled by onReady callback
-  }, [setIsPlaying]);
+  // Handle when video ends
+  const handleEnded = useCallback(() => {
+    isEndingRef.current = true;
+    setIsPlaying(false);
+    selectSegmentByTime(video.duration);
+
+    // Clear flag after a short delay
+    setTimeout(() => {
+      isEndingRef.current = false;
+    }, 100);
+  }, [setIsPlaying, selectSegmentByTime, video.duration]);
+
+  // Handle when video pauses
+  const handlePause = useCallback(() => {
+    if (!isEndingRef.current && video.isPlaying) {
+      setIsPlaying(false);
+    }
+  }, [setIsPlaying, video.isPlaying]);
 
   // Handle video errors
   const handleError = useCallback((error: any) => {
@@ -161,7 +129,6 @@ export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
       // Use ReactPlayer ref with HTMLMediaElement interface
       if (playerRef.current) {
         playerRef.current.currentTime = seekTime;
-        console.log('🎯 Seeking to:', seekTime);
       }
 
       setCurrentTime(seekTime);
@@ -199,7 +166,9 @@ export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
   // Get current active caption segment
   const getCurrentCaption = () => {
     if (!captionFile || !selectedSegmentId) return null;
-    return captionFile.segments.find(segment => segment.id === selectedSegmentId);
+    return captionFile.segments.find(
+      (segment) => segment.id === selectedSegmentId
+    );
   };
 
   // Clean up blob URL when component unmounts
@@ -286,7 +255,8 @@ export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
             onTimeUpdate={handleTimeUpdate}
             onDurationChange={handleDurationChange}
             onPlay={handlePlay}
-            onPause={() => setIsPlaying(false)}
+            onPause={handlePause}
+            onEnded={handleEnded}
             onError={handleError}
             controls={false}
           />
@@ -376,7 +346,9 @@ export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
               </p>
             ) : (
               <p className="text-gray-500 text-center text-sm italic">
-                {captionFile?.segments.length ? 'No caption for current time' : 'No captions loaded'}
+                {captionFile?.segments.length
+                  ? 'No caption for current time'
+                  : 'No captions loaded'}
               </p>
             );
           })()}

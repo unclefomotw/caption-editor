@@ -215,6 +215,33 @@ caption-editor/
 
 5. **Flashing bug** - set `loop={false}` to prevent flashing
 
+6. **🚨 VIDEO END LOOP BUG**: ReactPlayer can get stuck in rapid play/pause cycling when video ends
+   - **Symptoms**: Console spam of "onPlay"/"onPause", video flickers, UI becomes unresponsive
+   - **Root cause**: `onEnded` → state change → ReactPlayer re-render → `onPlay`/`onPause` → infinite loop
+   - **Solution**: Use ref flag to block event handlers during video end transition:
+
+   ```tsx
+   const isEndingRef = useRef(false);
+
+   const handleEnded = useCallback(() => {
+     isEndingRef.current = true;
+     setIsPlaying(false);
+     // Clear flag after delay
+     setTimeout(() => {
+       isEndingRef.current = false;
+     }, 100);
+   }, [setIsPlaying]);
+
+   const handlePlay = useCallback(() => {
+     if (!isEndingRef.current && !video.isPlaying) {
+       setIsPlaying(true);
+     }
+   }, [setIsPlaying, video.isPlaying]);
+   ```
+
+   - **Critical**: Don't remove this protection or the bug will return
+   - **Note**: Browser AbortError during end transition is harmless and can be ignored
+
 See @docs/reactplayer-reality-guide.md for complete details.
 
 ### 🚨 CRITICAL Advanced Caption Editing Implementation Rules
@@ -232,19 +259,7 @@ See @docs/spec/editor_spec.txt for details
 
 **MUST READ**: Key patterns for maintaining video/caption sync that have been tested and verified:
 
-1. **Auto-generate sample captions on video load**:
-
-   ```tsx
-   // In handleDurationChange after setVideoReady(true)
-   if (!captionFile) {
-     const sampleCaptionFile = {
-       // Generate sample segments within video duration
-     };
-     setCaptionFile(sampleCaptionFile);
-   }
-   ```
-
-2. **Use HTML5 video element for direct seeking**:
+1. **Use HTML5 video element for direct seeking**:
 
    ```tsx
    // When clicking caption segments
@@ -254,7 +269,7 @@ See @docs/spec/editor_spec.txt for details
    }
    ```
 
-3. **Implement smooth auto-scrolling with refs**:
+2. **Implement smooth auto-scrolling with refs**:
 
    ```tsx
    const segmentListRef = useRef<HTMLDivElement>(null);
@@ -268,7 +283,7 @@ See @docs/spec/editor_spec.txt for details
    }, [selectedSegmentId]);
    ```
 
-4. **Enhanced visual feedback for active segments**:
+3. **Enhanced visual feedback for active segments**:
    ```tsx
    className={`${
      isSelected
@@ -359,6 +374,35 @@ See @docs/spec/editor_spec.txt for details
 5. **Key store location**: `src/stores/caption-store.ts` with Zustand persist middleware
 6. **localStorage key**: `caption-editor-store`
 7. **Debugging**: Console logs with 🔧 🔍 ✅ ❌ prefixes for persistence tracking
+
+### 🚨 CRITICAL Code Maintenance Traps
+
+**LESSONS LEARNED** - Common pitfalls that will break functionality:
+
+1. **Don't over-engineer debugging**:
+   - **Trap**: Adding excessive console.log statements during development
+   - **Risk**: Code becomes unreadable and harder to debug actual issues
+   - **Solution**: Keep minimal, focused logging only for critical paths
+
+2. **Don't remove video end protection**:
+   - **Trap**: Simplifying event handlers by removing `isEndingRef` checks
+   - **Risk**: Video end loop bug returns immediately
+   - **Solution**: Always keep the ref-based protection in `handlePlay`/`handlePause`/`handleEnded`
+
+3. **Don't force video seeking on end**:
+   - **Trap**: Adding `currentTime = 0` or `setCurrentTime(0)` in `handleEnded`
+   - **Risk**: Causes browser AbortError and potential state conflicts
+   - **Solution**: Let video naturally stay at end position
+
+4. **Don't trust ReactPlayer documentation**:
+   - **Trap**: Following GitHub README or online examples for event handlers
+   - **Risk**: TypeScript errors and incorrect behavior
+   - **Solution**: Always use HTML5 event signatures and trust TypeScript definitions
+
+5. **Don't batch state updates in event loops**:
+   - **Trap**: Thinking complex async logic will prevent feedback loops
+   - **Risk**: More complexity = more bugs, timing issues
+   - **Solution**: Use simple ref flags with minimal setTimeout cleanup
 
 ### 🚨 CRITICAL AI Transcription Integration Rules
 
