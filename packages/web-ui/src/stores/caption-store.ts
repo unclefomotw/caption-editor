@@ -23,6 +23,8 @@ interface VideoState {
   fileName: string | null; // For display
   fileMetadata: VideoFileMetadata | null; // For recovery matching
   file: File | null; // Original file for backend upload
+  volume: number; // 0-1 range
+  isMuted: boolean;
 }
 
 interface CaptionStore {
@@ -57,6 +59,9 @@ interface CaptionStore {
   restoreVideoFromStorage: () => Promise<boolean>;
   clearVideoStorage: () => void;
   checkAndRestoreCaptions: (file: File) => void;
+  setVolume: (volume: number) => void;
+  setMuted: (muted: boolean) => void;
+  toggleMute: () => void;
 
   // Caption actions
   setCaptionFile: (file: CaptionFile) => void;
@@ -99,6 +104,8 @@ const initialVideoState: VideoState = {
   fileName: null,
   fileMetadata: null,
   file: null,
+  volume: 1.0,
+  isMuted: false,
 };
 
 export const useCaptionStore = create<CaptionStore>()(
@@ -315,6 +322,36 @@ export const useCaptionStore = create<CaptionStore>()(
             }),
             false,
             'setVideoReady'
+          ),
+
+        setVolume: (volume) =>
+          set(
+            (state) => ({
+              video: {
+                ...state.video,
+                volume: Math.max(0, Math.min(1, volume)),
+              },
+            }),
+            false,
+            'setVolume'
+          ),
+
+        setMuted: (isMuted) =>
+          set(
+            (state) => ({
+              video: { ...state.video, isMuted },
+            }),
+            false,
+            'setMuted'
+          ),
+
+        toggleMute: () =>
+          set(
+            (state) => ({
+              video: { ...state.video, isMuted: !state.video.isMuted },
+            }),
+            false,
+            'toggleMute'
           ),
 
         // Caption actions

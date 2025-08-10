@@ -3,8 +3,8 @@
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { useCaptionStore } from '@/stores/caption-store';
-import { Pause, Play, RotateCcw, Volume2 } from 'lucide-react';
-import { useCallback, useEffect, useRef } from 'react';
+import { Pause, Play, RotateCcw, Volume2, VolumeX } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import ReactPlayer from 'react-player';
 
 interface VideoPlayerProps {
@@ -27,6 +27,9 @@ export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
     restoreVideoFromStorage,
     captionFile,
     selectedSegmentId,
+    setVolume,
+    setMuted,
+    toggleMute,
   } = useCaptionStore();
 
   // Handle file upload with persistence
@@ -74,15 +77,28 @@ export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
       if (duration && duration > 0 && !isNaN(duration)) {
         setVideoDuration(duration);
         setVideoReady(true);
+
+        // Sync volume and mute state with HTML5 video element
+        target.volume = video.volume;
+        target.muted = video.isMuted;
       }
     },
-    [setVideoDuration, setVideoReady]
+    [setVideoDuration, setVideoReady, video.volume, video.isMuted]
   );
 
   // Auto-restore video from storage on component mount
   useEffect(() => {
     restoreVideoFromStorage();
   }, [restoreVideoFromStorage]);
+
+  // Sync volume and mute state with HTML5 video element when video loads
+  useEffect(() => {
+    if (playerRef.current && video.url) {
+      const videoElement = playerRef.current;
+      videoElement.volume = video.volume;
+      videoElement.muted = video.isMuted;
+    }
+  }, [video.url, video.volume, video.isMuted]);
 
   // Handle when video starts playing
   const handlePlay = useCallback(() => {
@@ -114,6 +130,35 @@ export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
   const handleError = useCallback((error: any) => {
     console.error('ReactPlayer error:', error);
   }, []);
+
+  // Handle volume change
+  const handleVolumeChange = useCallback(
+    (values: number[]) => {
+      const newVolume = values[0];
+      setVolume(newVolume);
+
+      // Update the HTML5 video element volume
+      if (playerRef.current) {
+        playerRef.current.volume = newVolume;
+      }
+
+      // Auto-unmute when volume is changed
+      if (video.isMuted && newVolume > 0) {
+        setMuted(false);
+      }
+    },
+    [setVolume, setMuted, video.isMuted]
+  );
+
+  // Handle mute toggle
+  const handleMuteToggle = useCallback(() => {
+    toggleMute();
+
+    // Update the HTML5 video element muted property
+    if (playerRef.current) {
+      playerRef.current.muted = !video.isMuted;
+    }
+  }, [toggleMute, video.isMuted]);
 
   // Handle play/pause
   const togglePlayPause = useCallback(() => {
@@ -155,6 +200,30 @@ export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
     setCurrentTime(newTime);
     selectSegmentByTime(newTime);
   }, [video.currentTime, setCurrentTime, selectSegmentByTime]);
+
+  // Volume control functions
+  const increaseVolume = useCallback(() => {
+    const newVolume = Math.min(video.volume + 0.1, 1);
+    setVolume(newVolume);
+    if (playerRef.current) {
+      playerRef.current.volume = newVolume;
+    }
+    // Auto-unmute when increasing volume
+    if (video.isMuted) {
+      setMuted(false);
+      if (playerRef.current) {
+        playerRef.current.muted = false;
+      }
+    }
+  }, [video.volume, video.isMuted, setVolume, setMuted]);
+
+  const decreaseVolume = useCallback(() => {
+    const newVolume = Math.max(video.volume - 0.1, 0);
+    setVolume(newVolume);
+    if (playerRef.current) {
+      playerRef.current.volume = newVolume;
+    }
+  }, [video.volume, setVolume]);
 
   // Format time for display
   const formatTime = (seconds: number) => {
@@ -203,12 +272,26 @@ export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
           event.preventDefault();
           skipForward();
           break;
+        case 'ArrowUp':
+          event.preventDefault();
+          increaseVolume();
+          break;
+        case 'ArrowDown':
+          event.preventDefault();
+          decreaseVolume();
+          break;
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [togglePlayPause, skipBackward, skipForward]);
+  }, [
+    togglePlayPause,
+    skipBackward,
+    skipForward,
+    increaseVolume,
+    decreaseVolume,
+  ]);
 
   return (
     <div className={`bg-black rounded-lg overflow-hidden ${className}`}>
@@ -259,6 +342,8 @@ export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
             onEnded={handleEnded}
             onError={handleError}
             controls={false}
+            volume={video.volume}
+            muted={video.isMuted}
           />
 
           {/* Video Controls Overlay */}
@@ -313,13 +398,30 @@ export function VideoPlayer({ className, onVideoLoad }: VideoPlayerProps) {
                 </Button>
               </div>
 
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-3">
+                {/* Volume Slider */}
+                <div className="w-20">
+                  <Slider
+                    value={[video.isMuted ? 0 : video.volume]}
+                    max={1}
+                    step={0.1}
+                    onValueChange={handleVolumeChange}
+                    className="w-full"
+                  />
+                </div>
+
+                {/* Volume Button */}
                 <Button
                   variant="ghost"
                   size="sm"
+                  onClick={handleMuteToggle}
                   className="text-white hover:bg-white/20"
                 >
-                  <Volume2 className="w-4 h-4" />
+                  {video.isMuted || video.volume === 0 ? (
+                    <VolumeX className="w-4 h-4" />
+                  ) : (
+                    <Volume2 className="w-4 h-4" />
+                  )}
                 </Button>
               </div>
             </div>
