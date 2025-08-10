@@ -1,0 +1,6 @@
+I want to make the AI generation of captions more modulized, flexible, and follow SOLID principle, so that other developers can plugin their AI generation easily.
+
+First, assuming a user has loaded a video, please tell me the current end-to-end flow from "The user clicks on [AI Generate] button" to "Caption is generated and displayed at the editor", including
+- Source files and functions involved
+- Flow
+- Sequence diagram
