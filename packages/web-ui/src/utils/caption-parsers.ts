@@ -74,6 +74,11 @@ export const parseVTT = (content: string, fileName?: string): CaptionFile => {
 
     // Check if line contains timing (arrow pattern)
     if (line.includes('-->')) {
+      // Save the previous segment before creating a new one
+      if (currentSegment && currentSegment.text) {
+        segments.push(currentSegment as CaptionSegment);
+      }
+
       const timingMatch = line.match(/([\d:.,]+)\s*-->\s*([\d:.,]+)/);
       if (timingMatch) {
         const startTime = parseTimeToSeconds(timingMatch[1]);
