@@ -38,6 +38,7 @@ export function CaptionEditor({ className }: CaptionEditorProps) {
     'start' | 'end' | null
   >(null);
   const [editingTimestampValue, setEditingTimestampValue] = useState('');
+  const [hoveredSegmentId, setHoveredSegmentId] = useState<string | null>(null);
 
   // Format time for display
   const formatTime = (seconds: number) => {
@@ -273,6 +274,124 @@ export function CaptionEditor({ className }: CaptionEditorProps) {
     [mergeSegments]
   );
 
+  // Calculate timestamp for a new segment before or after a given segment
+  const calculateNewSegmentTimestamp = useCallback(
+    (targetSegment: CaptionSegment, position: 'before' | 'after') => {
+      if (!captionFile) return { startTime: 0, endTime: 5 };
+
+      const segments = captionFile.segments.sort(
+        (a, b) => a.startTime - b.startTime
+      );
+      const targetIndex = segments.findIndex((s) => s.id === targetSegment.id);
+
+      if (position === 'before') {
+        const isFirstSegment = targetIndex === 0;
+        const prevSegment = isFirstSegment ? null : segments[targetIndex - 1];
+
+        const endTime = targetSegment.startTime; // Y's end timestamp is X's start timestamp
+
+        if (isFirstSegment) {
+          // Adding before the first segment
+          const duration = Math.min(endTime, 5); // Duration <= 5 seconds when possible
+          const startTime = endTime - duration; // Start from 0:00.00 or endTime - 5 seconds
+          return { startTime: Math.max(0, startTime), endTime };
+        } else {
+          // Adding between segments Z and X
+          const availableStart = prevSegment!.endTime; // Z's end timestamp
+          const availableGap = endTime - availableStart;
+
+          if (availableGap <= 5) {
+            // Duration would be <= 5 seconds, use Z's end timestamp
+            return { startTime: availableStart, endTime };
+          } else {
+            // Duration would be > 5 seconds, use endTime - 5 seconds
+            return { startTime: endTime - 5, endTime };
+          }
+        }
+      } else {
+        // after
+        const isLastSegment = targetIndex === segments.length - 1;
+        const nextSegment = isLastSegment ? null : segments[targetIndex + 1];
+
+        const startTime = targetSegment.endTime; // Y's start timestamp is X's end timestamp
+
+        if (isLastSegment) {
+          // Adding after the last segment
+          return { startTime, endTime: startTime + 5 }; // Y's end timestamp is Y's start + 5 seconds
+        } else {
+          // Adding between segments X and Z
+          const availableEnd = nextSegment!.startTime; // Z's start timestamp
+          const availableGap = availableEnd - startTime;
+
+          if (availableGap <= 5) {
+            // Duration would be <= 5 seconds, use Z's start timestamp
+            return { startTime, endTime: availableEnd };
+          } else {
+            // Duration would be > 5 seconds, use startTime + 5 seconds
+            return { startTime, endTime: startTime + 5 };
+          }
+        }
+      }
+    },
+    [captionFile]
+  );
+
+  // Handle adding a segment before or after another segment
+  const handleAddSegmentNear = useCallback(
+    (targetSegment: CaptionSegment, position: 'before' | 'after') => {
+      const { startTime, endTime } = calculateNewSegmentTimestamp(
+        targetSegment,
+        position
+      );
+
+      const newSegment: CaptionSegment = {
+        id: `segment_${Date.now()}`,
+        startTime,
+        endTime,
+        text: '',
+      };
+
+      addSegment(newSegment);
+      selectSegment(newSegment.id);
+    },
+    [calculateNewSegmentTimestamp, addSegment, selectSegment]
+  );
+
+  // Check if add segment buttons should be disabled
+  const getAddSegmentButtonStates = useCallback(
+    (targetSegment: CaptionSegment) => {
+      if (!captionFile) return { beforeDisabled: false, afterDisabled: false };
+
+      const segments = captionFile.segments.sort(
+        (a, b) => a.startTime - b.startTime
+      );
+      const targetIndex = segments.findIndex((s) => s.id === targetSegment.id);
+
+      let beforeDisabled = false;
+      let afterDisabled = false;
+
+      // Check if "before" button should be disabled
+      if (targetIndex > 0) {
+        const prevSegment = segments[targetIndex - 1];
+        // Disable if Y's end timestamp equals X's start timestamp
+        beforeDisabled = prevSegment.endTime === targetSegment.startTime;
+      } else {
+        // X is the first segment - disable if X's start timestamp is 0
+        beforeDisabled = targetSegment.startTime === 0;
+      }
+
+      // Check if "after" button should be disabled
+      if (targetIndex < segments.length - 1) {
+        const nextSegment = segments[targetIndex + 1];
+        // Disable if Y's start timestamp equals X's end timestamp
+        afterDisabled = nextSegment.startTime === targetSegment.endTime;
+      }
+
+      return { beforeDisabled, afterDisabled };
+    },
+    [captionFile]
+  );
+
   if (!captionFile) {
     return (
       <div className={`p-6 bg-gray-50 rounded-lg ${className}`}>
@@ -309,12 +428,6 @@ export function CaptionEditor({ className }: CaptionEditorProps) {
           <div>
             <p className="text-sm text-gray-600">{segments.length} segments</p>
           </div>
-          <div className="flex space-x-2">
-            <Button onClick={handleAddSegment} size="sm" variant="outline">
-              <Plus className="w-4 h-4 mr-2" />
-              Add Segment
-            </Button>
-          </div>
         </div>
       </div>
 
@@ -341,7 +454,7 @@ export function CaptionEditor({ className }: CaptionEditorProps) {
                 <div
                   key={segment.id}
                   ref={isSelected ? selectedSegmentRef : null}
-                  className={`p-4 transition-all duration-200 cursor-pointer ${
+                  className={`relative p-4 transition-all duration-200 cursor-pointer ${
                     isSelected
                       ? 'bg-blue-100 border-l-4 border-blue-500 shadow-sm transform translate-x-1'
                       : 'hover:bg-gray-50 hover:translate-x-0.5'
@@ -351,7 +464,65 @@ export function CaptionEditor({ className }: CaptionEditorProps) {
                     !isEditingTimestamp &&
                     handleSegmentClick(segment)
                   }
+                  onMouseEnter={() => setHoveredSegmentId(segment.id)}
+                  onMouseLeave={() => setHoveredSegmentId(null)}
                 >
+                  {/* Add Segment Buttons */}
+                  {hoveredSegmentId === segment.id &&
+                    (() => {
+                      const { beforeDisabled, afterDisabled } =
+                        getAddSegmentButtonStates(segment);
+                      return (
+                        <>
+                          {/* Add Segment Before Button */}
+                          <button
+                            className={`absolute -top-0.5 left-1/2 transform -translate-x-1/2 px-3 py-1 rounded-full text-xs font-medium shadow-lg transition-all duration-200 flex items-center space-x-1 z-10 ${
+                              beforeDisabled
+                                ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                                : 'bg-blue-600 hover:bg-blue-700 text-white'
+                            }`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (!beforeDisabled) {
+                                handleAddSegmentNear(segment, 'before');
+                              }
+                            }}
+                            disabled={beforeDisabled}
+                            title={
+                              beforeDisabled
+                                ? 'Cannot add segment - no gap available'
+                                : 'Add segment before this one'
+                            }
+                          >
+                            <Plus className="w-3 h-3" />
+                            <span>Add Segment</span>
+                          </button>
+                          {/* Add Segment After Button */}
+                          <button
+                            className={`absolute -bottom-0.5 left-1/2 transform -translate-x-1/2 px-3 py-1 rounded-full text-xs font-medium shadow-lg transition-all duration-200 flex items-center space-x-1 z-10 ${
+                              afterDisabled
+                                ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                                : 'bg-blue-600 hover:bg-blue-700 text-white'
+                            }`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (!afterDisabled) {
+                                handleAddSegmentNear(segment, 'after');
+                              }
+                            }}
+                            disabled={afterDisabled}
+                            title={
+                              afterDisabled
+                                ? 'Cannot add segment - no gap available'
+                                : 'Add segment after this one'
+                            }
+                          >
+                            <Plus className="w-3 h-3" />
+                            <span>Add Segment</span>
+                          </button>
+                        </>
+                      );
+                    })()}
                   <div className="flex items-start justify-between">
                     {/* Timing and Content */}
                     <div className="flex-1 mr-4">
