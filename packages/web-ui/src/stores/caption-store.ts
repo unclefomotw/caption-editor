@@ -186,7 +186,7 @@ export const useCaptionStore = create<CaptionStore>()(
 
         clearVideoStorage: () => {
           set(
-            (state) => ({
+            () => ({
               video: {
                 ...initialVideoState,
               },
@@ -262,7 +262,7 @@ export const useCaptionStore = create<CaptionStore>()(
             if (isMatch) {
               console.log('✅ Video file matches! Restoring captions...');
               set(
-                (state) => ({
+                () => ({
                   captionFile: storedCaptionFile,
                   captionsCleared: false, // Reset flag so restored captions can be persisted again
                 }),
@@ -275,7 +275,7 @@ export const useCaptionStore = create<CaptionStore>()(
               );
               // Clear captions in UI but don't save to localStorage (preserve stored captions for recovery)
               set(
-                (state) => ({
+                () => ({
                   captionFile: null,
                   selectedSegmentId: null,
                 }),

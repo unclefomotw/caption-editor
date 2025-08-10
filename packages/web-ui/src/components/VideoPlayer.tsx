@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { useCaptionStore } from '@/stores/caption-store';
 import { Pause, Play, RotateCcw, Volume2, VolumeX } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import ReactPlayer from 'react-player';
 
 interface VideoPlayerProps {

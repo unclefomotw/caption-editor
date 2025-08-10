@@ -196,7 +196,7 @@ export const parseSRT = (content: string, fileName?: string): CaptionFile => {
 export const exportToVTT = (captionFile: CaptionFile): string => {
   let vtt = 'WEBVTT\n\n';
 
-  captionFile.segments.forEach((segment, index) => {
+  captionFile.segments.forEach((segment) => {
     const startTime = formatTimeForVTT(segment.startTime);
     const endTime = formatTimeForVTT(segment.endTime);
 
