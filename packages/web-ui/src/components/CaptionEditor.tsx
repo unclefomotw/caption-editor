@@ -12,7 +12,10 @@ import {
   X,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { CaptionSegment } from '../../../common-types/src/types';
+import type {
+  CaptionSegment,
+  CaptionFile,
+} from '../../../common-types/src/types';
 
 interface CaptionEditorProps {
   className?: string;
@@ -29,6 +32,7 @@ export function CaptionEditor({ className }: CaptionEditorProps) {
     splitSegment,
     mergeSegments,
     selectSegment,
+    setCaptionFile,
     setIsPlaying,
     setCurrentTime,
   } = useCaptionStore();
@@ -261,6 +265,35 @@ export function CaptionEditor({ className }: CaptionEditorProps) {
     selectSegment(newSegment.id);
   }, [video.currentTime, addSegment, selectSegment]);
 
+  // Handle creating the first caption segment (0:00 to 0:05)
+  const handleAddFirstCaption = useCallback(() => {
+    const firstSegment: CaptionSegment = {
+      id: `segment_${Date.now()}`,
+      startTime: 0, // 0:00.00
+      endTime: 5, // 0:05.00
+      text: '', // Empty text for user to fill
+    };
+
+    // Create a new CaptionFile if none exists
+    if (!captionFile) {
+      const newCaptionFile: CaptionFile = {
+        segments: [firstSegment],
+        language: 'en',
+        format: 'vtt',
+        metadata: {
+          title: `Caption - ${video.fileName || 'Video'}`,
+          createdAt: new Date().toISOString(),
+          modifiedAt: new Date().toISOString(),
+        },
+      };
+      setCaptionFile(newCaptionFile);
+    } else {
+      addSegment(firstSegment);
+    }
+
+    selectSegment(firstSegment.id);
+  }, [captionFile, setCaptionFile, addSegment, selectSegment, video.fileName]);
+
   // Handle split segment at current time
   const handleSplitSegment = useCallback(
     (segmentId: string) => {
@@ -439,7 +472,7 @@ export function CaptionEditor({ className }: CaptionEditorProps) {
             Upload a video and generate captions to start editing
           </p>
           <Button
-            onClick={handleAddSegment}
+            onClick={handleAddFirstCaption}
             disabled={!video.isReady}
             className="mt-2"
           >

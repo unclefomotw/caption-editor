@@ -1,5 +1,11 @@
 *** Test Cases ***
 
+Initiate an empty caption
+    Given a video is loaded in the player
+    When no captions are loaded in the editor from any sources
+    Then enable "Add First Caption" button
+    And clicking on it will create on caption segment of timestmap from 0:00 to 0:05
+
 Edit timestamps of a segment
     Given a caption segement in the editor
     When clicking on the starting or ending timestamp of the segment

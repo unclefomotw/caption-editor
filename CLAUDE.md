@@ -62,6 +62,7 @@ Building a web application for editing video captions with AI-powered transcript
 - Hover-based segment management (add before/after with smart positioning)
 - Segment merging with collision-free UI
 - Visual overlap detection between segments
+- Empty caption initialization
 - Detailed editor specification (see @docs/spec/editor_spec.txt)
 
 ## How to Run/Test
