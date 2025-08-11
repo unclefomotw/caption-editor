@@ -2,6 +2,10 @@
   "name": "web-ui",
   "version": "0.2.0",
   "private": true,
+  "author": {
+    "name": "YWC Tech",
+    "url": "https://github.com/unclefomotw"
+  },
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",

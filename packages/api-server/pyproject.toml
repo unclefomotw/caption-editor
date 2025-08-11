@@ -2,7 +2,7 @@
 name = "caption-editor-api"
 version = "0.2.0"
 description = "Caption Editor API Server - FastAPI backend for video caption processing"
-authors = ["Caption Editor Team"]
+authors = ["YWC Tech"]
 packages = [{include = "caption_editor_api", from = "src"}]
 
 [tool.poetry.dependencies]
